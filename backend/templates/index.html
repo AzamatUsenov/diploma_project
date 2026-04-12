@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}JobPlatform — Поиск работы{% endblock %}
+
+{% block content %}
+<div class="py-12 text-center">
+    <h1 class="text-4xl font-bold text-gray-900 mb-3">Найди работу мечты</h1>
+    <p class="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+        Платформа с умным анализатором требований. Мы покажем реальный уровень вакансии и подскажем, стоит ли подавать заявку.
+    </p>
+    <div class="flex justify-center gap-4 mb-12">
+        <a href="/jobs/" class="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition">Смотреть вакансии</a>
+        <a href="/tests/" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">Пройти тест</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="text-3xl mb-3">&#x1F50D;</div>
+            <h3 class="font-semibold mb-1">Анализатор требований</h3>
+            <p class="text-sm text-gray-500">Определяем реальный уровень вакансии и честность требований</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="text-3xl mb-3">&#x2696;</div>
+            <h3 class="font-semibold mb-1">Сравнение вакансий</h3>
+            <p class="text-sm text-gray-500">Сравнивай 2-4 вакансии: зарплата, матч, честность, вердикт</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="text-3xl mb-3">&#x1F4DD;</div>
+            <h3 class="font-semibold mb-1">Тесты навыков</h3>
+            <p class="text-sm text-gray-500">Подтверди свои знания Python, JS, Django, React, SQL</p>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div id="stats" class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadStats() {
+        try {
+            const [jobs, tests, profiles] = await Promise.all([
+                api('/jobs/'),
+                api('/tests/'),
+                api('/accounts/profiles/'),
+            ]);
+            document.getElementById('stats').innerHTML = `
+                <div class="bg-white p-4 rounded-lg border text-center">
+                    <div class="text-2xl font-bold text-primary-600">${jobs.count}</div>
+                    <div class="text-xs text-gray-500">Вакансий</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border text-center">
+                    <div class="text-2xl font-bold text-green-600">${(jobs.results || []).filter(j => j.training_provided).length}+</div>
+                    <div class="text-xs text-gray-500">С обучением</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border text-center">
+                    <div class="text-2xl font-bold text-purple-600">${tests.count}</div>
+                    <div class="text-xs text-gray-500">Тестов</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border text-center">
+                    <div class="text-2xl font-bold text-orange-600">${profiles.count}</div>
+                    <div class="text-xs text-gray-500">Пользователей</div>
+                </div>
+            `;
+        } catch(e) { console.error(e); }
+    }
+    loadStats();
+</script>
+{% endblock %}

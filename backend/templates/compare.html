@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Сравнение вакансий — JobPlatform{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/jobs/" class="text-sm text-primary-600 hover:underline">&larr; К вакансиям</a>
+    <h1 class="text-2xl font-bold mt-2">Сравнение вакансий</h1>
+</div>
+<div id="compare-content">
+    <p class="text-gray-500">Загрузка...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadComparison() {
+        const params = new URLSearchParams(window.location.search);
+        const idsStr = params.get('ids');
+        if (!idsStr) {
+            document.getElementById('compare-content').innerHTML = `
+                <div class="bg-white rounded-xl border p-8 text-center">
+                    <p class="text-gray-500 mb-4">Выберите 2-4 вакансии для сравнения на странице вакансий</p>
+                    <a href="/jobs/" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm">К вакансиям</a>
+                </div>`;
+            return;
+        }
+
+        const jobIds = idsStr.split(',').map(Number).filter(Boolean);
+        if (jobIds.length < 2) {
+            document.getElementById('compare-content').innerHTML = '<p class="text-red-500">Нужно минимум 2 вакансии</p>';
+            return;
+        }
+
+        try {
+            const body = { job_ids: jobIds };
+            if (currentUser) body.user_id = currentUser.id;
+            const data = await api('/analytics/compare/', { method: 'POST', body });
+            renderComparison(data);
+        } catch(e) {
+            document.getElementById('compare-content').innerHTML = '<p class="text-red-500">Ошибка сравнения</p>';
+        }
+    }
+
+    function renderComparison(data) {
+        const jobs = data.jobs;
+        const comp = data.comparison;
+        const verdict = data.verdict;
+        const cols = jobs.length;
+
+        const container = document.getElementById('compare-content');
+        container.innerHTML = `
+            <!-- Verdict -->
+            <div class="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-lg">&#x1F3C6;</span>
+                    <span class="font-semibold text-primary-800">Вердикт</span>
+                </div>
+                <p class="text-sm text-primary-700">${verdict.explanation}</p>
+            </div>
+
+            <!-- Comparison table -->
+            <div class="overflow-x-auto">
+                <table class="w-full bg-white rounded-xl border shadow-sm">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="p-3 text-left text-sm font-medium text-gray-500 w-40">Параметр</th>
+                            ${jobs.map(j => `
+                                <th class="p-3 text-center ${j.id === verdict.winner_id ? 'bg-primary-50' : ''}">
+                                    <div class="font-semibold text-sm">${j.title}</div>
+                                    <div class="text-xs text-gray-500">${j.company}</div>
+                                    ${j.id === verdict.winner_id ? '<div class="text-xs text-primary-600 mt-1">&#x1F3C6; Лучший выбор</div>' : ''}
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        ${compRow('Уровень', jobs.map(j => levelBadge(j.level) + (j.analysis.detected_level !== j.level ? ` <span class="text-xs text-red-500">&#8594; ${j.analysis.detected_level}</span>` : '')))}
+                        ${compRow('Зарплата', jobs.map(j => `<span class="font-medium">${formatSalary(j.salary_min, j.salary_max)}</span>`), comp.best_salary, jobs)}
+                        ${compRow('Честность', jobs.map(j => {
+                            const c = j.analysis.honesty_score >= 70 ? 'text-green-600' : j.analysis.honesty_score >= 40 ? 'text-yellow-600' : 'text-red-600';
+                            return `<span class="font-bold ${c}">${j.analysis.honesty_score}%</span><br>${scoreBar(j.analysis.honesty_score)}`;
+                        }), comp.most_honest, jobs)}
+                        ${jobs[0].match ? compRow('Матч', jobs.map(j => {
+                            const c = j.match.match_score >= 70 ? 'text-green-600' : j.match.match_score >= 40 ? 'text-yellow-600' : 'text-red-600';
+                            return `<span class="font-bold ${c}">${j.match.match_score}%</span><br>${scoreBar(j.match.match_score)}`;
+                        }), comp.best_match, jobs) : ''}
+                        ${compRow('Локация', jobs.map(j => `${j.location}${j.is_remote ? '<br><span class="text-xs text-primary-600">&#127760; Remote</span>' : ''}`))}
+                        ${compRow('Опыт', jobs.map(j => `${j.experience_years} лет`))}
+                        ${compRow('Обучение', jobs.map(j => j.training_provided ? '<span class="text-green-600">&#x2705; Да</span>' : '<span class="text-gray-400">&#x274C; Нет</span>'))}
+                        ${compRow('Завышены', jobs.map(j => j.analysis.is_overqualified ? '<span class="text-red-600">&#x26A0; Да</span>' : '<span class="text-green-600">&#x2705; Нет</span>'))}
+                        ${compRow('Навыки', jobs.map(j => `<div class="flex flex-wrap gap-1 justify-center">${j.analysis.parsed_skills.slice(0, 8).map(s => `<span class="text-xs px-1.5 py-0.5 bg-gray-100 rounded">${s}</span>`).join('')}${j.analysis.parsed_skills.length > 8 ? `<span class="text-xs text-gray-400">+${j.analysis.parsed_skills.length - 8}</span>` : ''}</div>`))}
+                        ${jobs[0].match ? compRow('Недостающие', jobs.map(j => `<div class="flex flex-wrap gap-1 justify-center">${(j.match.missing_skills || []).slice(0, 5).map(s => `<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded">${s}</span>`).join('')}</div>`)) : ''}
+                        ${compRow('Общий балл', jobs.map(j => {
+                            const s = j.scores.overall_score;
+                            const c = s >= 60 ? 'text-green-600' : s >= 40 ? 'text-yellow-600' : 'text-red-600';
+                            return `<span class="text-xl font-bold ${c}">${s}</span>`;
+                        }))}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Common skills -->
+            ${comp.common_skills.length ? `
+            <div class="bg-white rounded-xl border shadow-sm p-4 mt-6">
+                <h3 class="font-medium text-sm mb-2">Общие навыки (требуются везде):</h3>
+                <div class="flex flex-wrap gap-1">
+                    ${comp.common_skills.map(s => `<span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${s}</span>`).join('')}
+                </div>
+            </div>` : ''}
+
+            <div class="mt-4 text-center">
+                <button onclick="clearCompare()" class="text-sm text-gray-500 hover:text-red-500">Очистить сравнение</button>
+            </div>
+        `;
+    }
+
+    function compRow(label, values, bestId, jobs) {
+        return `<tr class="hover:bg-gray-50">
+            <td class="p-3 text-sm text-gray-500 font-medium">${label}</td>
+            ${values.map((v, i) => {
+                const isBest = bestId && jobs && jobs[i].id === bestId;
+                return `<td class="p-3 text-center text-sm ${isBest ? 'bg-green-50' : ''}">${v}</td>`;
+            }).join('')}
+        </tr>`;
+    }
+
+    function clearCompare() {
+        localStorage.removeItem('compareSet');
+        window.location = '/jobs/';
+    }
+
+    function onUserChanged() { loadComparison(); }
+    loadComparison();
+</script>
+{% endblock %}

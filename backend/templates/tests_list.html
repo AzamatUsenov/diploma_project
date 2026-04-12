@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Тесты навыков — JobPlatform{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Тесты навыков</h1>
+<p class="text-gray-500 mb-6">Подтвердите свои знания — результаты увеличат ваш матч-скор</p>
+<div id="tests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+<!-- Test modal -->
+<div id="test-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div id="test-modal-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadTests() {
+        try {
+            const data = await api('/tests/');
+            const grid = document.getElementById('tests-grid');
+            const diffColors = {
+                easy: 'bg-green-100 text-green-700',
+                medium: 'bg-yellow-100 text-yellow-700',
+                hard: 'bg-red-100 text-red-700',
+            };
+            const langIcons = {
+                python: '&#x1F40D;',
+                javascript: '&#x2728;',
+                react: '&#x269B;',
+                java: '&#x2615;',
+                general: '&#x1F4DA;',
+            };
+
+            grid.innerHTML = (data.results || []).map(test => `
+                <div class="bg-white rounded-xl border shadow-sm p-5 hover:shadow-md transition fade-in">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-2xl">${langIcons[test.language] || '&#x1F4DD;'}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full ${diffColors[test.difficulty] || ''}">${test.difficulty}</span>
+                    </div>
+                    <h3 class="font-semibold mb-1">${test.title}</h3>
+                    <p class="text-sm text-gray-500 mb-3">${test.description}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-400">${test.questions_count} вопросов</span>
+                        <button onclick="startTest(${test.id})" class="bg-primary-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-primary-700">Пройти</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async function startTest(testId) {
+        if (!currentUser) { alert('Выберите пользователя'); return; }
+        try {
+            const test = await api(`/tests/${testId}/`);
+            const modal = document.getElementById('test-modal');
+            const content = document.getElementById('test-modal-content');
+
+            content.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">${test.title}</h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                </div>
+                <form id="test-form" onsubmit="submitTest(event, ${test.id})">
+                    ${test.questions.map((q, i) => `
+                        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                            <p class="font-medium mb-3">${i + 1}. ${q.text}</p>
+                            <div class="space-y-2">
+                                ${['a', 'b', 'c', 'd'].map(opt => q['option_' + opt] ? `
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
+                                        <input type="radio" name="q_${q.id}" value="${opt}" required>
+                                        <span><strong>${opt.toUpperCase()}.</strong> ${q['option_' + opt]}</span>
+                                    </label>
+                                ` : '').join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                    <button type="submit" class="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700">
+                        Отправить ответы
+                    </button>
+                </form>
+            `;
+            modal.classList.remove('hidden');
+        } catch(e) { alert('Ошибка загрузки теста'); }
+    }
+
+    async function submitTest(event, testId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const answers = [];
+
+        for (const [key, value] of formData.entries()) {
+            const qId = parseInt(key.replace('q_', ''));
+            answers.push({ question_id: qId, answer: value });
+        }
+
+        try {
+            const result = await api(`/tests/${testId}/submit/`, {
+                method: 'POST',
+                body: { user_id: currentUser.id, answers },
+            });
+
+            const content = document.getElementById('test-modal-content');
+            const pct = result.max_score > 0 ? Math.round((result.score / result.max_score) * 100) : 0;
+            const passed = result.status === 'passed';
+
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-5xl mb-4">${passed ? '&#x1F389;' : '&#x1F4AA;'}</div>
+                    <h2 class="text-2xl font-bold mb-2">${passed ? 'Тест пройден!' : 'Не сдан'}</h2>
+                    <div class="text-4xl font-bold ${passed ? 'text-green-600' : 'text-red-600'} mb-2">${result.score}/${result.max_score}</div>
+                    <div class="text-gray-500 mb-4">${pct}% правильных ответов</div>
+                    ${scoreBar(pct)}
+                    <div class="mt-2 text-sm text-gray-500">Для прохождения нужно 70%+</div>
+                    <button onclick="closeModal()" class="mt-6 bg-primary-600 text-white px-6 py-2 rounded-lg">Закрыть</button>
+                </div>
+            `;
+        } catch(e) {
+            alert('Ошибка отправки: ' + JSON.stringify(e));
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('test-modal').classList.add('hidden');
+    }
+
+    loadTests();
+</script>
+{% endblock %}
