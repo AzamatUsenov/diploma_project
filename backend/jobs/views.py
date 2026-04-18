@@ -1,5 +1,5 @@
 from rest_framework import viewsets, filters
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Count
 from .models import Job, JobTag
 from .serializers import (
@@ -8,18 +8,10 @@ from .serializers import (
     JobCreateSerializer,
     JobTagSerializer,
 )
+from accounts.permissions import IsHR, IsOwnerOrReadOnly, ReadOnly
 
 
 class JobViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for jobs.
-    list:     GET /api/jobs/          (lightweight fields)
-    retrieve: GET /api/jobs/{id}/     (full detail with description)
-    create:   POST /api/jobs/
-    update:   PUT/PATCH /api/jobs/{id}/
-    delete:   DELETE /api/jobs/{id}/
-    """
-    permission_classes = [AllowAny]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'company', 'location']
     ordering_fields = [
@@ -28,12 +20,16 @@ class JobViewSet(viewsets.ModelViewSet):
     ]
     ordering = ['-created_at']
 
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsHR(), IsOwnerOrReadOnly()]
+        return [ReadOnly()]
+
     def get_queryset(self):
         qs = Job.objects.filter(is_active=True).annotate(
             applications_count=Count('applications')
         ).select_related('posted_by')
 
-        # --- Custom filters ---
         level = self.request.query_params.get('level')
         if level:
             qs = qs.filter(level=level)
@@ -58,7 +54,6 @@ class JobViewSet(viewsets.ModelViewSet):
         if tech:
             qs = qs.filter(tech_stack__contains=[tech])
 
-        # Analyzer-based filters
         min_honesty = self.request.query_params.get('min_honesty')
         if min_honesty:
             qs = qs.filter(honesty_score__gte=int(min_honesty))
@@ -77,24 +72,10 @@ class JobViewSet(viewsets.ModelViewSet):
         return JobDetailSerializer
 
     def perform_create(self, serializer):
-        # Accept posted_by from request body (no auth, MVP)
-        user_id = self.request.data.get('posted_by')
-        if user_id:
-            from django.contrib.auth.models import User
-            user = User.objects.get(pk=user_id)
-            serializer.save(posted_by=user)
-        else:
-            # Fallback: use first superuser or first user
-            from django.contrib.auth.models import User
-            user = User.objects.first()
-            serializer.save(posted_by=user)
+        serializer.save(posted_by=self.request.user)
 
 
 class JobTagViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for job tags.
-    list: GET /api/jobs/tags/
-    """
     queryset = JobTag.objects.all()
     serializer_class = JobTagSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]

@@ -1,7 +1,3 @@
-"""
-Simple template views for the frontend pages.
-All data is loaded via JavaScript API calls — these just serve the HTML shell.
-"""
 from django.views.generic import TemplateView
 
 
@@ -17,9 +13,33 @@ class JobDetailView(TemplateView):
     template_name = 'job_detail.html'
 
 
+class JobCreateView(TemplateView):
+    template_name = 'job_create.html'
+
+
 class CompareView(TemplateView):
     template_name = 'compare.html'
 
 
 class TestsListView(TemplateView):
     template_name = 'tests_list.html'
+
+
+class LoginView(TemplateView):
+    template_name = 'login.html'
+
+
+class RegisterView(TemplateView):
+    template_name = 'register.html'
+
+
+class ProfileView(TemplateView):
+    template_name = 'profile.html'
+
+
+class ApplicationsView(TemplateView):
+    template_name = 'applications.html'
+
+
+class FavoritesView(TemplateView):
+    template_name = 'favorites.html'

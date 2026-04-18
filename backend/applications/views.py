@@ -1,8 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 from .models import Application
 from .serializers import (
     ApplicationListSerializer,
@@ -10,30 +9,21 @@ from .serializers import (
     ApplicationCreateSerializer,
     ApplicationStatusSerializer,
 )
+from accounts.permissions import IsHR, IsApplicant
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
-    """
-    Applications management.
-    list:     GET /api/applications/
-    retrieve: GET /api/applications/{id}/
-    create:   POST /api/applications/         (body: job, cover_letter, applicant_id)
-    status:   PATCH /api/applications/{id}/status/  (body: status)
-
-    Query params:
-      ?applicant_id=1   — filter by applicant
-      ?job_id=1         — filter by job
-    """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Application.objects.select_related(
-            'applicant', 'job'
-        ).all()
+        qs = Application.objects.select_related('applicant', 'job').all()
+        user = self.request.user
 
-        applicant_id = self.request.query_params.get('applicant_id')
-        if applicant_id:
-            qs = qs.filter(applicant_id=applicant_id)
+        if hasattr(user, 'profile'):
+            if user.profile.role == 'applicant':
+                qs = qs.filter(applicant=user)
+            elif user.profile.role == 'hr':
+                qs = qs.filter(job__posted_by=user)
 
         job_id = self.request.query_params.get('job_id')
         if job_id:
@@ -51,19 +41,16 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return ApplicationDetailSerializer
 
     def perform_create(self, serializer):
-        # Accept applicant_id from request body (no auth, MVP)
-        applicant_id = self.request.data.get('applicant_id')
-        if applicant_id:
-            user = User.objects.get(pk=applicant_id)
-            serializer.save(applicant=user)
-        else:
-            user = User.objects.first()
-            serializer.save(applicant=user)
+        serializer.save(applicant=self.request.user)
 
     @action(detail=True, methods=['patch'], url_path='status')
     def update_status(self, request, pk=None):
-        """HR updates application status: PATCH /api/applications/{id}/status/"""
         application = self.get_object()
+        if not (hasattr(request.user, 'profile') and request.user.profile.role == 'hr'):
+            return Response(
+                {'detail': 'Only HR can update application status.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = ApplicationStatusSerializer(
             application, data=request.data, partial=True
         )

@@ -26,11 +26,8 @@
                 hard: 'bg-red-100 text-red-700',
             };
             const langIcons = {
-                python: '&#x1F40D;',
-                javascript: '&#x2728;',
-                react: '&#x269B;',
-                java: '&#x2615;',
-                general: '&#x1F4DA;',
+                python: '&#x1F40D;', javascript: '&#x2728;', react: '&#x269B;',
+                java: '&#x2615;', general: '&#x1F4DA;',
             };
 
             grid.innerHTML = (data.results || []).map(test => `
@@ -51,7 +48,7 @@
     }
 
     async function startTest(testId) {
-        if (!currentUser) { alert('Выберите пользователя'); return; }
+        if (!requireAuth()) return;
         try {
             const test = await api(`/tests/${testId}/`);
             const modal = document.getElementById('test-modal');
@@ -82,7 +79,7 @@
                 </form>
             `;
             modal.classList.remove('hidden');
-        } catch(e) { alert('Ошибка загрузки теста'); }
+        } catch(e) { toast('Ошибка загрузки теста', 'error'); }
     }
 
     async function submitTest(event, testId) {
@@ -99,7 +96,7 @@
         try {
             const result = await api(`/tests/${testId}/submit/`, {
                 method: 'POST',
-                body: { user_id: currentUser.id, answers },
+                body: { answers },
             });
 
             const content = document.getElementById('test-modal-content');
@@ -118,7 +115,7 @@
                 </div>
             `;
         } catch(e) {
-            alert('Ошибка отправки: ' + JSON.stringify(e));
+            toast('Ошибка отправки', 'error');
         }
     }
 

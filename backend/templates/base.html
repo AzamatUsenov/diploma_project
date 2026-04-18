@@ -24,6 +24,9 @@
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .score-bar { transition: width 0.8s ease-out; }
+        .toast { position: fixed; top: 20px; right: 20px; z-index: 100; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px; animation: fadeIn 0.3s; }
+        .toast-success { background: #22c55e; }
+        .toast-error { background: #ef4444; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -38,10 +41,20 @@
                     <a href="/compare/" class="text-sm text-gray-600 hover:text-primary-600">Сравнение</a>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <select id="user-selector" class="text-sm border rounded px-2 py-1 text-gray-600" onchange="switchUser(this.value)">
-                        <option value="">Выберите пользователя</option>
-                    </select>
-                    <span id="user-badge" class="hidden text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700"></span>
+                    <!-- Logged out -->
+                    <div id="nav-guest" class="hidden flex items-center space-x-2">
+                        <a href="/login/" class="text-sm text-gray-600 hover:text-primary-600">Войти</a>
+                        <a href="/register/" class="text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700">Регистрация</a>
+                    </div>
+                    <!-- Logged in -->
+                    <div id="nav-user" class="hidden flex items-center space-x-3">
+                        <a id="nav-create-job" href="/jobs/create/" class="hidden text-sm text-green-600 hover:text-green-700 font-medium">+ Вакансия</a>
+                        <a href="/applications/" class="text-sm text-gray-600 hover:text-primary-600">Заявки</a>
+                        <a href="/favorites/" class="text-sm text-gray-600 hover:text-primary-600">Избранное</a>
+                        <a href="/profile/" class="text-sm text-gray-600 hover:text-primary-600" id="nav-username"></a>
+                        <span id="nav-role-badge" class="text-xs px-2 py-0.5 rounded-full"></span>
+                        <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700">Выйти</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,93 +73,135 @@
     <script>
         const API = '/api';
 
-        // Current user state
-        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        let currentProfile = JSON.parse(localStorage.getItem('currentProfile') || 'null');
+        function getTokens() {
+            const t = localStorage.getItem('tokens');
+            return t ? JSON.parse(t) : null;
+        }
 
-        // API helper
+        function getProfile() {
+            const p = localStorage.getItem('profile');
+            return p ? JSON.parse(p) : null;
+        }
+
+        function saveAuth(data) {
+            localStorage.setItem('tokens', JSON.stringify(data.tokens));
+            localStorage.setItem('profile', JSON.stringify(data.user));
+            updateNav();
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('tokens');
+            localStorage.removeItem('profile');
+            updateNav();
+        }
+
+        function isLoggedIn() {
+            return !!getTokens();
+        }
+
+        function logout() {
+            clearAuth();
+            window.location = '/';
+        }
+
+        async function refreshAccessToken() {
+            const tokens = getTokens();
+            if (!tokens || !tokens.refresh) { clearAuth(); return null; }
+            try {
+                const res = await fetch(`${API}/accounts/token/refresh/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh: tokens.refresh }),
+                });
+                if (!res.ok) { clearAuth(); return null; }
+                const data = await res.json();
+                tokens.access = data.access;
+                localStorage.setItem('tokens', JSON.stringify(tokens));
+                return tokens.access;
+            } catch { clearAuth(); return null; }
+        }
+
         async function api(path, options = {}) {
             const url = path.startsWith('http') ? path : `${API}${path}`;
-            const config = { headers: { 'Content-Type': 'application/json' }, ...options };
-            if (config.body && typeof config.body === 'object') {
-                config.body = JSON.stringify(config.body);
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            const tokens = getTokens();
+            if (tokens && tokens.access) {
+                headers['Authorization'] = `Bearer ${tokens.access}`;
             }
-            const res = await fetch(url, config);
+            if (options.body && typeof options.body === 'object') {
+                options.body = JSON.stringify(options.body);
+            }
+            let res = await fetch(url, { ...options, headers });
+            if (res.status === 401 && tokens) {
+                const newAccess = await refreshAccessToken();
+                if (newAccess) {
+                    headers['Authorization'] = `Bearer ${newAccess}`;
+                    res = await fetch(url, { ...options, headers });
+                }
+            }
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw { status: res.status, ...err };
             }
+            if (res.status === 204) return {};
             return res.json();
         }
 
-        // Load users into selector
-        async function loadUsers() {
-            try {
-                const data = await api('/accounts/profiles/');
-                const sel = document.getElementById('user-selector');
-                (data.results || []).forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = `${p.user.username} (${p.role}/${p.level || '-'})`;
-                    if (currentProfile && currentProfile.id === p.id) opt.selected = true;
-                    sel.appendChild(opt);
-                });
-                if (currentProfile) updateUserBadge();
-            } catch (e) {
-                console.error('Failed to load users:', e);
-            }
-        }
-
-        function switchUser(profileId) {
-            if (!profileId) {
-                currentUser = null;
-                currentProfile = null;
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('currentProfile');
-                document.getElementById('user-badge').classList.add('hidden');
-                return;
-            }
-            api(`/accounts/profiles/${profileId}/`).then(p => {
-                currentProfile = p;
-                currentUser = p.user;
-                localStorage.setItem('currentUser', JSON.stringify(p.user));
-                localStorage.setItem('currentProfile', JSON.stringify(p));
-                updateUserBadge();
-                if (typeof onUserChanged === 'function') onUserChanged();
-            });
-        }
-
-        function updateUserBadge() {
-            const badge = document.getElementById('user-badge');
-            if (currentProfile) {
-                badge.textContent = `${currentProfile.level || currentProfile.role}`;
-                badge.classList.remove('hidden');
+        function updateNav() {
+            const profile = getProfile();
+            const guest = document.getElementById('nav-guest');
+            const user = document.getElementById('nav-user');
+            if (profile && isLoggedIn()) {
+                guest.classList.add('hidden');
+                user.classList.remove('hidden');
+                user.classList.add('flex');
+                document.getElementById('nav-username').textContent = profile.user.username;
+                const badge = document.getElementById('nav-role-badge');
                 const colors = {
-                    junior: 'bg-green-100 text-green-700',
-                    mid: 'bg-blue-100 text-blue-700',
-                    senior: 'bg-purple-100 text-purple-700',
+                    applicant: 'bg-green-100 text-green-700',
                     hr: 'bg-orange-100 text-orange-700',
                 };
-                badge.className = `text-xs px-2 py-1 rounded-full ${colors[currentProfile.level] || colors[currentProfile.role] || 'bg-gray-100 text-gray-700'}`;
+                const labels = { applicant: 'Соискатель', hr: 'HR' };
+                badge.className = `text-xs px-2 py-0.5 rounded-full ${colors[profile.role] || 'bg-gray-100'}`;
+                badge.textContent = labels[profile.role] || profile.role;
+                const createJobLink = document.getElementById('nav-create-job');
+                if (profile.role === 'hr') createJobLink.classList.remove('hidden');
+                else createJobLink.classList.add('hidden');
             } else {
-                badge.classList.add('hidden');
+                guest.classList.remove('hidden');
+                guest.classList.add('flex');
+                user.classList.add('hidden');
             }
         }
 
-        // Score bar helper
+        function toast(msg, type = 'success') {
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        function requireAuth() {
+            if (!isLoggedIn()) {
+                toast('Войдите в аккаунт', 'error');
+                setTimeout(() => window.location = '/login/', 500);
+                return false;
+            }
+            return true;
+        }
+
         function scoreBar(score, max = 100) {
             const pct = Math.round((score / max) * 100);
             const color = pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-500' : 'bg-red-500';
             return `<div class="w-full bg-gray-200 rounded-full h-2"><div class="score-bar ${color} h-2 rounded-full" style="width:${pct}%"></div></div>`;
         }
 
-        // Level badge helper
         function levelBadge(level) {
             const colors = { junior: 'bg-green-100 text-green-800', mid: 'bg-blue-100 text-blue-800', senior: 'bg-purple-100 text-purple-800' };
             return `<span class="text-xs px-2 py-0.5 rounded-full ${colors[level] || 'bg-gray-100'}">${level}</span>`;
         }
 
-        // Format salary
         function formatSalary(min, max) {
             const fmt = n => n ? (n >= 1000000 ? (n/1000000).toFixed(1) + 'M' : Math.round(n/1000) + 'K') : '?';
             if (min && max) return `${fmt(min)} - ${fmt(max)} ₸`;
@@ -155,8 +210,7 @@
             return 'Не указана';
         }
 
-        // Init
-        loadUsers();
+        updateNav();
     </script>
     {% block extra_js %}{% endblock %}
 </body>

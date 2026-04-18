@@ -1,8 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
 from .models import SkillTest, Question, TestResult, Answer
@@ -17,13 +16,7 @@ from .serializers import (
 
 
 class SkillTestViewSet(viewsets.ModelViewSet):
-    """
-    Skill tests management.
-    list:     GET /api/tests/          (lightweight with question count)
-    retrieve: GET /api/tests/{id}/     (full with nested questions)
-    submit:   POST /api/tests/{id}/submit/  (submit answers)
-    """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         return SkillTest.objects.annotate(
@@ -37,25 +30,12 @@ class SkillTestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='submit')
     def submit(self, request, pk=None):
-        """
-        Submit test answers.
-        POST /api/tests/{id}/submit/
-        Body: { "user_id": 1, "answers": [{"question_id": 1, "answer": "a"}, ...] }
-        """
         test = self.get_object()
         submit_serializer = TestSubmitSerializer(data=request.data)
         submit_serializer.is_valid(raise_exception=True)
 
-        user_id = request.data.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'user_id is required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        user = request.user
 
-        user = User.objects.get(pk=user_id)
-
-        # Check if already completed
         existing = TestResult.objects.filter(
             user=user, test=test, completed_at__isnull=False
         ).first()
@@ -65,7 +45,6 @@ class SkillTestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-        # Create result
         result = TestResult.objects.create(user=user, test=test)
 
         score = 0
@@ -104,24 +83,12 @@ class SkillTestViewSet(viewsets.ModelViewSet):
 
 
 class TestResultViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    View test results.
-    list:     GET /api/tests/results/           (all results)
-    retrieve: GET /api/tests/results/{id}/      (single result with answers)
-
-    Query params:
-      ?user_id=1  — filter by user
-    """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = TestResult.objects.select_related('test', 'user').all()
-
-        user_id = self.request.query_params.get('user_id')
-        if user_id:
-            qs = qs.filter(user_id=user_id)
-
-        return qs
+        return TestResult.objects.select_related('test', 'user').filter(
+            user=self.request.user
+        )
 
     def get_serializer_class(self):
         if self.action == 'list':

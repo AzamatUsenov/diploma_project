@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Избранное — JobPlatform{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Избранное</h1>
+<div id="favorites-content" class="space-y-3">
+    <p class="text-gray-500">Загрузка...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (!isLoggedIn()) { window.location = '/login/'; }
+
+    async function loadFavorites() {
+        try {
+            const data = await api('/analytics/favorites/');
+            const container = document.getElementById('favorites-content');
+
+            if (!data.results || data.results.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl border p-8 text-center">
+                        <p class="text-gray-500 mb-4">В избранном пока пусто</p>
+                        <a href="/jobs/" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm">Смотреть вакансии</a>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = data.results.map(fav => `
+                <div class="bg-white rounded-xl border shadow-sm p-4 fade-in flex justify-between items-center">
+                    <div>
+                        <a href="/jobs/${fav.job}/" class="font-semibold text-gray-900 hover:text-primary-600">${fav.job_title}</a>
+                        <div class="text-sm text-gray-500">${fav.job_company}</div>
+                        <div class="text-xs text-gray-400">${new Date(fav.created_at).toLocaleDateString('ru')}</div>
+                    </div>
+                    <button onclick="removeFavorite(${fav.id})" class="text-red-400 hover:text-red-600 text-sm">Удалить</button>
+                </div>
+            `).join('');
+        } catch(e) {
+            document.getElementById('favorites-content').innerHTML = '<p class="text-red-500">Ошибка загрузки</p>';
+        }
+    }
+
+    async function removeFavorite(id) {
+        try {
+            await api(`/analytics/favorites/${id}/`, { method: 'DELETE' });
+            toast('Удалено из избранного');
+            loadFavorites();
+        } catch(e) {
+            toast('Ошибка', 'error');
+        }
+    }
+
+    loadFavorites();
+</script>
+{% endblock %}
