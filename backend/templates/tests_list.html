@@ -2,13 +2,20 @@
 {% block title %}Тесты навыков — JobPlatform{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Тесты навыков</h1>
-<p class="text-gray-500 mb-6">Подтвердите свои знания — результаты увеличат ваш матч-скор</p>
-<div id="tests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+<div class="flex items-center gap-3 mb-2">
+    <div class="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+    </div>
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Тесты навыков</h1>
+        <p class="text-sm text-gray-500">Подтвердите знания и повысьте матч-скор</p>
+    </div>
+</div>
+<div id="tests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"></div>
 
 <!-- Test modal -->
-<div id="test-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+<div id="test-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
         <div id="test-modal-content"></div>
     </div>
 </div>
@@ -16,34 +23,53 @@
 
 {% block extra_js %}
 <script>
+    const langConfig = {
+        python: { icon: '&#x1F40D;', color: 'bg-yellow-100 text-yellow-800', name: 'Python' },
+        javascript: { icon: '&#x2728;', color: 'bg-yellow-100 text-yellow-800', name: 'JavaScript' },
+        react: { icon: '&#x269B;', color: 'bg-blue-100 text-blue-800', name: 'React' },
+        java: { icon: '&#x2615;', color: 'bg-red-100 text-red-800', name: 'Java' },
+        general: { icon: '&#x1F4DA;', color: 'bg-gray-100 text-gray-800', name: 'General' },
+    };
+
+    const diffConfig = {
+        easy: { label: 'Легкий', color: 'bg-success-50 text-success-700 ring-1 ring-success-200' },
+        medium: { label: 'Средний', color: 'bg-warning-50 text-warning-700 ring-1 ring-warning-200' },
+        hard: { label: 'Сложный', color: 'bg-danger-50 text-danger-700 ring-1 ring-danger-200' },
+    };
+
     async function loadTests() {
         try {
             const data = await api('/tests/');
             const grid = document.getElementById('tests-grid');
-            const diffColors = {
-                easy: 'bg-green-100 text-green-700',
-                medium: 'bg-yellow-100 text-yellow-700',
-                hard: 'bg-red-100 text-red-700',
-            };
-            const langIcons = {
-                python: '&#x1F40D;', javascript: '&#x2728;', react: '&#x269B;',
-                java: '&#x2615;', general: '&#x1F4DA;',
-            };
 
-            grid.innerHTML = (data.results || []).map(test => `
-                <div class="bg-white rounded-xl border shadow-sm p-5 hover:shadow-md transition fade-in">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="text-2xl">${langIcons[test.language] || '&#x1F4DD;'}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full ${diffColors[test.difficulty] || ''}">${test.difficulty}</span>
+            if (!data.results || data.results.length === 0) {
+                grid.innerHTML = `<div class="col-span-full card p-12 text-center">
+                    <p class="text-gray-500">Тесты пока не добавлены</p>
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = data.results.map(test => {
+                const lang = langConfig[test.language] || langConfig.general;
+                const diff = diffConfig[test.difficulty] || diffConfig.easy;
+                return `
+                <div class="card p-6 slide-up">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl ${lang.color} flex items-center justify-center text-2xl">${lang.icon}</div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">${test.title}</h3>
+                                <span class="text-xs ${diff.color} px-2 py-0.5 rounded-lg font-medium">${diff.label}</span>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="font-semibold mb-1">${test.title}</h3>
-                    <p class="text-sm text-gray-500 mb-3">${test.description}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">${test.questions_count} вопросов</span>
-                        <button onclick="startTest(${test.id})" class="bg-primary-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-primary-700">Пройти</button>
+                    <p class="text-sm text-gray-500 mb-4 leading-relaxed">${test.description}</p>
+                    <div class="flex justify-between items-center pt-3 border-t">
+                        <span class="text-xs text-gray-400 font-medium">${test.questions_count} вопросов</span>
+                        <button onclick="startTest(${test.id})" class="btn-primary !py-2 !px-4 !text-sm">Пройти тест</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } catch(e) { console.error(e); }
     }
 
@@ -55,25 +81,33 @@
             const content = document.getElementById('test-modal-content');
 
             content.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">${test.title}</h2>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold">${test.title}</h2>
+                        <p class="text-sm text-gray-500 mt-1">${test.questions.length} вопросов &#183; Для прохождения нужно 70%+</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
                 <form id="test-form" onsubmit="submitTest(event, ${test.id})">
                     ${test.questions.map((q, i) => `
-                        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                            <p class="font-medium mb-3">${i + 1}. ${q.text}</p>
-                            <div class="space-y-2">
+                        <div class="mb-5 p-5 bg-gray-50 rounded-xl">
+                            <p class="font-medium mb-3 text-gray-900">
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold mr-2">${i + 1}</span>
+                                ${q.text}
+                            </p>
+                            <div class="space-y-2 ml-8">
                                 ${['a', 'b', 'c', 'd'].map(opt => q['option_' + opt] ? `
-                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
-                                        <input type="radio" name="q_${q.id}" value="${opt}" required>
-                                        <span><strong>${opt.toUpperCase()}.</strong> ${q['option_' + opt]}</span>
+                                    <label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2.5 rounded-lg transition group">
+                                        <input type="radio" name="q_${q.id}" value="${opt}" required class="text-primary-600 focus:ring-primary-500">
+                                        <span class="group-hover:text-gray-900 text-gray-600"><strong class="text-gray-500">${opt.toUpperCase()}.</strong> ${q['option_' + opt]}</span>
                                     </label>
                                 ` : '').join('')}
                             </div>
                         </div>
                     `).join('')}
-                    <button type="submit" class="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700">
+                    <button type="submit" id="test-submit-btn" class="w-full btn-primary !py-3 text-base">
                         Отправить ответы
                     </button>
                 </form>
@@ -85,9 +119,12 @@
     async function submitTest(event, testId) {
         event.preventDefault();
         const form = event.target;
+        const btn = document.getElementById('test-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Проверяем...';
+
         const formData = new FormData(form);
         const answers = [];
-
         for (const [key, value] of formData.entries()) {
             const qId = parseInt(key.replace('q_', ''));
             answers.push({ question_id: qId, answer: value });
@@ -105,17 +142,25 @@
 
             content.innerHTML = `
                 <div class="text-center py-8">
-                    <div class="text-5xl mb-4">${passed ? '&#x1F389;' : '&#x1F4AA;'}</div>
+                    <div class="w-20 h-20 rounded-full ${passed ? 'bg-success-100' : 'bg-danger-100'} flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 ${passed ? 'text-success-600' : 'text-danger-600'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${passed
+                                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+                                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+                        </svg>
+                    </div>
                     <h2 class="text-2xl font-bold mb-2">${passed ? 'Тест пройден!' : 'Не сдан'}</h2>
-                    <div class="text-4xl font-bold ${passed ? 'text-green-600' : 'text-red-600'} mb-2">${result.score}/${result.max_score}</div>
+                    <div class="text-4xl font-bold ${passed ? 'text-success-600' : 'text-danger-600'} mb-1">${result.score}/${result.max_score}</div>
                     <div class="text-gray-500 mb-4">${pct}% правильных ответов</div>
-                    ${scoreBar(pct)}
-                    <div class="mt-2 text-sm text-gray-500">Для прохождения нужно 70%+</div>
-                    <button onclick="closeModal()" class="mt-6 bg-primary-600 text-white px-6 py-2 rounded-lg">Закрыть</button>
+                    <div class="max-w-xs mx-auto mb-4">${scoreBar(pct)}</div>
+                    <p class="text-sm text-gray-500 mb-6">${passed ? 'Результат сохранён в профиле' : 'Для прохождения нужно 70%+. Попробуйте ещё раз!'}</p>
+                    <button onclick="closeModal()" class="btn-primary">Закрыть</button>
                 </div>
             `;
         } catch(e) {
             toast('Ошибка отправки', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Отправить ответы';
         }
     }
 

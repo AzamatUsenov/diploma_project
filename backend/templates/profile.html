@@ -2,8 +2,36 @@
 {% block title %}Профиль — JobPlatform{% endblock %}
 
 {% block content %}
-<div id="profile-page" class="max-w-2xl mx-auto space-y-6">
-    <p class="text-gray-500">Загрузка...</p>
+<div id="profile-page" class="max-w-3xl mx-auto space-y-6">
+    <div class="flex justify-center py-12">
+        <div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="password-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 slide-up">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Изменить пароль</h2>
+            <button onclick="closePasswordModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form onsubmit="changePassword(event)" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Текущий пароль</label>
+                <input type="password" name="old_password" required class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Новый пароль</label>
+                <input type="password" name="new_password" required minlength="6" class="input-field">
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closePasswordModal()" class="btn-secondary flex-1">Отмена</button>
+                <button type="submit" class="btn-primary flex-1">Сохранить</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
@@ -21,87 +49,110 @@
             const page = document.getElementById('profile-page');
 
             page.innerHTML = `
-                <h1 class="text-2xl font-bold">Профиль</h1>
-
-                <div class="bg-white rounded-xl border shadow-sm p-6">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600">
+                <!-- Header -->
+                <div class="card p-6 slide-up">
+                    <div class="flex items-center gap-5">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-400 to-purple-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
                             ${profile.user.username[0].toUpperCase()}
                         </div>
-                        <div>
-                            <div class="text-lg font-semibold">${profile.user.username}</div>
-                            <div class="text-sm text-gray-500">${profile.user.email}</div>
-                            <div class="flex gap-2 mt-1">
-                                <span class="text-xs px-2 py-0.5 rounded-full ${isHR ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}">
-                                    ${isHR ? 'HR' : 'Соискатель'}
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-1">
+                                <h1 class="text-2xl font-bold text-gray-900">${profile.user.username}</h1>
+                                <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${isHR ? 'bg-warning-50 text-warning-700 ring-1 ring-warning-200' : 'bg-success-50 text-success-700 ring-1 ring-success-200'}">
+                                    ${isHR ? 'HR менеджер' : 'Соискатель'}
                                 </span>
                                 ${!isHR ? levelBadge(profile.level) : ''}
                             </div>
+                            <div class="text-sm text-gray-500">${profile.user.email}</div>
+                            <div class="text-xs text-gray-400 mt-1">На платформе с ${new Date(profile.created_at).toLocaleDateString('ru')}</div>
                         </div>
+                        <button onclick="openPasswordModal()" class="btn-ghost !text-xs">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                            Сменить пароль
+                        </button>
                     </div>
+                </div>
 
+                <!-- Edit Form -->
+                <div class="card p-6 slide-up" style="animation-delay:0.1s">
+                    <h2 class="text-lg font-semibold mb-4">Редактировать профиль</h2>
                     <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Имя</label>
-                                <input type="text" name="first_name" value="${profile.user.first_name || ''}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Имя</label>
+                                <input type="text" name="first_name" value="${profile.user.first_name || ''}" class="input-field" placeholder="Имя">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
-                                <input type="text" name="last_name" value="${profile.user.last_name || ''}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Фамилия</label>
+                                <input type="text" name="last_name" value="${profile.user.last_name || ''}" class="input-field" placeholder="Фамилия">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">О себе</label>
-                            <textarea name="bio" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">${profile.bio || ''}</textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">О себе</label>
+                            <textarea name="bio" rows="3" class="input-field" placeholder="Расскажите о себе...">${profile.bio || ''}</textarea>
                         </div>
 
                         ${!isHR ? `
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Навыки (через запятую)</label>
-                            <input type="text" name="skills" value="${(profile.skills || []).join(', ')}" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Python, Django, JavaScript">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Навыки</label>
+                            <input type="text" name="skills" value="${(profile.skills || []).join(', ')}" class="input-field" placeholder="Python, Django, JavaScript, React...">
+                            <p class="text-xs text-gray-400 mt-1">Через запятую. Чем точнее — тем лучше матч с вакансиями</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Portfolio URL</label>
-                                <input type="url" name="portfolio_url" value="${profile.portfolio_url || ''}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Портфолио</label>
+                                <input type="url" name="portfolio_url" value="${profile.portfolio_url || ''}" class="input-field" placeholder="https://portfolio.dev">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">GitHub URL</label>
-                                <input type="url" name="github_url" value="${profile.github_url || ''}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">GitHub</label>
+                                <input type="url" name="github_url" value="${profile.github_url || ''}" class="input-field" placeholder="https://github.com/username">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Уровень</label>
-                            <select name="level" class="w-full border rounded-lg px-3 py-2 text-sm">
-                                <option value="junior" ${profile.level === 'junior' ? 'selected' : ''}>Junior</option>
-                                <option value="mid" ${profile.level === 'mid' ? 'selected' : ''}>Mid</option>
-                                <option value="senior" ${profile.level === 'senior' ? 'selected' : ''}>Senior</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Уровень</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="flex flex-col items-center gap-1 border-2 rounded-xl p-3 cursor-pointer transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 ${profile.level === 'junior' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}">
+                                    <input type="radio" name="level" value="junior" ${profile.level === 'junior' ? 'checked' : ''} class="sr-only">
+                                    <span class="text-lg">&#x1F331;</span>
+                                    <span class="text-sm font-medium">Junior</span>
+                                </label>
+                                <label class="flex flex-col items-center gap-1 border-2 rounded-xl p-3 cursor-pointer transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 ${profile.level === 'mid' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}">
+                                    <input type="radio" name="level" value="mid" ${profile.level === 'mid' ? 'checked' : ''} class="sr-only">
+                                    <span class="text-lg">&#x1F4BB;</span>
+                                    <span class="text-sm font-medium">Middle</span>
+                                </label>
+                                <label class="flex flex-col items-center gap-1 border-2 rounded-xl p-3 cursor-pointer transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 ${profile.level === 'senior' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}">
+                                    <input type="radio" name="level" value="senior" ${profile.level === 'senior' ? 'checked' : ''} class="sr-only">
+                                    <span class="text-lg">&#x1F680;</span>
+                                    <span class="text-sm font-medium">Senior</span>
+                                </label>
+                            </div>
                         </div>
                         ` : `
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Компания</label>
-                            <input type="text" name="company_name" value="${profile.company_name || ''}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Компания</label>
+                            <input type="text" name="company_name" value="${profile.company_name || ''}" class="input-field" placeholder="Название компании">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">О компании</label>
-                            <textarea name="company_description" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">${profile.company_description || ''}</textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">О компании</label>
+                            <textarea name="company_description" rows="3" class="input-field" placeholder="Расскажите о компании...">${profile.company_description || ''}</textarea>
                         </div>
                         `}
 
-                        <button type="submit" class="bg-primary-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-primary-700">Сохранить</button>
+                        <button type="submit" class="btn-primary">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Сохранить
+                        </button>
                     </form>
                 </div>
 
-                <!-- Test results -->
                 ${!isHR ? '<div id="test-results"></div>' : ''}
             `;
 
             if (!isHR) loadTestResults();
         } catch(e) {
-            document.getElementById('profile-page').innerHTML = '<p class="text-red-500">Ошибка загрузки профиля</p>';
+            document.getElementById('profile-page').innerHTML = '<p class="text-danger-500 text-center py-12">Ошибка загрузки профиля</p>';
         }
     }
 
@@ -123,7 +174,7 @@
 
         try {
             await api('/accounts/profiles/me/', { method: 'PATCH', body: data });
-            toast('Профиль сохранён!');
+            toast('Профиль обновлён!');
             loadProfile();
         } catch(e) {
             toast('Ошибка сохранения', 'error');
@@ -136,34 +187,69 @@
             const container = document.getElementById('test-results');
             if (!data.results || data.results.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white rounded-xl border shadow-sm p-6">
-                        <h2 class="font-semibold text-lg mb-2">Результаты тестов</h2>
-                        <p class="text-sm text-gray-500">Вы ещё не проходили тестов. <a href="/tests/" class="text-primary-600 hover:underline">Пройти тест</a></p>
+                    <div class="card p-6 slide-up" style="animation-delay:0.2s">
+                        <h2 class="font-semibold text-lg mb-3">Результаты тестов</h2>
+                        <div class="bg-gray-50 rounded-xl p-6 text-center">
+                            <div class="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                            </div>
+                            <p class="text-gray-500 text-sm mb-2">Тесты повышают ваш матч-скор</p>
+                            <a href="/tests/" class="text-primary-600 text-sm font-medium hover:underline">Пройти тест &#8594;</a>
+                        </div>
                     </div>`;
                 return;
             }
             container.innerHTML = `
-                <div class="bg-white rounded-xl border shadow-sm p-6">
+                <div class="card p-6 slide-up" style="animation-delay:0.2s">
                     <h2 class="font-semibold text-lg mb-4">Результаты тестов</h2>
                     <div class="space-y-3">
                         ${data.results.map(r => {
                             const pct = r.max_score > 0 ? Math.round((r.score / r.max_score) * 100) : 0;
                             const passed = r.status === 'passed';
                             return `
-                            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                            <div class="flex items-center justify-between p-4 rounded-xl ${passed ? 'bg-success-50' : 'bg-gray-50'}">
                                 <div>
                                     <div class="font-medium text-sm">${r.test_title || 'Тест #' + r.test}</div>
-                                    <div class="text-xs text-gray-500">${new Date(r.completed_at).toLocaleDateString('ru')}</div>
+                                    <div class="text-xs text-gray-500 mt-0.5">${new Date(r.completed_at).toLocaleDateString('ru')}</div>
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <span class="text-sm font-bold ${passed ? 'text-green-600' : 'text-red-600'}">${r.score}/${r.max_score} (${pct}%)</span>
-                                    <span class="text-xs px-2 py-0.5 rounded-full ${passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${passed ? 'Сдан' : 'Не сдан'}</span>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold ${passed ? 'text-success-600' : 'text-danger-600'}">${r.score}/${r.max_score}</div>
+                                        <div class="text-xs text-gray-500">${pct}%</div>
+                                    </div>
+                                    <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${passed ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'}">${passed ? 'Сдан' : 'Не сдан'}</span>
                                 </div>
                             </div>`;
                         }).join('')}
                     </div>
                 </div>`;
         } catch(e) {}
+    }
+
+    function openPasswordModal() {
+        document.getElementById('password-modal').classList.remove('hidden');
+    }
+    function closePasswordModal() {
+        document.getElementById('password-modal').classList.add('hidden');
+    }
+
+    async function changePassword(e) {
+        e.preventDefault();
+        const form = e.target;
+        try {
+            await api('/accounts/profiles/change-password/', {
+                method: 'POST',
+                body: {
+                    old_password: form.old_password.value,
+                    new_password: form.new_password.value,
+                },
+            });
+            toast('Пароль изменён!');
+            closePasswordModal();
+            form.reset();
+        } catch(err) {
+            toast(err.detail || 'Ошибка смены пароля', 'error');
+        }
     }
 
     loadProfile();

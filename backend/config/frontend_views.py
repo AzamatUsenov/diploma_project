@@ -37,6 +37,10 @@ class ProfileView(TemplateView):
     template_name = 'profile.html'
 
 
+class PublicProfileView(TemplateView):
+    template_name = 'public_profile.html'
+
+
 class ApplicationsView(TemplateView):
     template_name = 'applications.html'
 

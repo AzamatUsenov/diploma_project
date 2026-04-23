@@ -25,6 +25,30 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response(self.get_serializer(profile).data)
 
+    @action(detail=False, methods=['post'], url_path='change-password')
+    def change_password(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        if not old_password or not new_password:
+            return Response(
+                {'detail': 'Both old_password and new_password are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not user.check_password(old_password):
+            return Response(
+                {'detail': 'Неверный текущий пароль.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(new_password) < 6:
+            return Response(
+                {'detail': 'Пароль должен содержать минимум 6 символов.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.set_password(new_password)
+        user.save()
+        return Response({'detail': 'Пароль успешно изменён.'})
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]

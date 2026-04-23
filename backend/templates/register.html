@@ -2,55 +2,128 @@
 {% block title %}Регистрация — JobPlatform{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto mt-12">
-    <div class="bg-white rounded-xl border shadow-sm p-8">
-        <h1 class="text-2xl font-bold text-center mb-6">Регистрация</h1>
-        <form id="register-form" onsubmit="handleRegister(event)">
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Имя пользователя</label>
-                <input type="text" name="username" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+<div class="max-w-lg mx-auto mt-8 fade-in">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Создайте аккаунт</h1>
+        <p class="text-gray-500 mt-2">Начните поиск работы или публикуйте вакансии</p>
+    </div>
+
+    <div class="card p-8">
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-5">
+            <!-- Step indicators -->
+            <div class="flex gap-2 mb-6">
+                <div id="step1-indicator" class="flex-1 h-1 rounded-full bg-primary-600 transition-all"></div>
+                <div id="step2-indicator" class="flex-1 h-1 rounded-full bg-gray-200 transition-all"></div>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-                <input type="password" name="password" required minlength="6" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Роль</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
-                        <input type="radio" name="role" value="applicant" checked class="text-primary-600">
-                        <div>
-                            <div class="text-sm font-medium">Соискатель</div>
+
+            <!-- Step 1: Basics -->
+            <div id="step1">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Кто вы?</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative flex flex-col items-center gap-2 border-2 border-gray-200 rounded-xl p-5 cursor-pointer hover:border-primary-300 transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                            <input type="radio" name="role" value="applicant" checked class="sr-only">
+                            <div class="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </div>
+                            <div class="text-sm font-semibold">Соискатель</div>
                             <div class="text-xs text-gray-500">Ищу работу</div>
-                        </div>
-                    </label>
-                    <label class="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-gray-50 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
-                        <input type="radio" name="role" value="hr" class="text-primary-600">
-                        <div>
-                            <div class="text-sm font-medium">HR</div>
+                        </label>
+                        <label class="relative flex flex-col items-center gap-2 border-2 border-gray-200 rounded-xl p-5 cursor-pointer hover:border-primary-300 transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                            <input type="radio" name="role" value="hr" class="sr-only">
+                            <div class="w-12 h-12 rounded-xl bg-warning-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            </div>
+                            <div class="text-sm font-semibold">HR менеджер</div>
                             <div class="text-xs text-gray-500">Публикую вакансии</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Имя пользователя</label>
+                    <input type="text" name="username" required class="input-field" placeholder="username">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <input type="email" name="email" required class="input-field" placeholder="you@example.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Пароль</label>
+                    <div class="relative">
+                        <input type="password" name="password" required minlength="6" class="input-field !pr-10" placeholder="Минимум 6 символов" id="reg-password">
+                        <button type="button" onclick="togglePassword('reg-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg class="w-5 h-5 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                        </button>
+                    </div>
+                    <div id="password-strength" class="mt-2"></div>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Подтвердите пароль</label>
+                    <input type="password" name="password2" required minlength="6" class="input-field" placeholder="Повторите пароль" id="reg-password2">
+                    <div id="password-match" class="mt-1 text-xs hidden"></div>
+                </div>
+
+                <button type="button" onclick="goToStep2()" class="w-full btn-primary !py-3">
+                    Далее
+                    <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                </button>
+            </div>
+
+            <!-- Step 2: Details -->
+            <div id="step2" class="hidden">
+                <div id="applicant-fields">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Ваш уровень</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <label class="flex flex-col items-center gap-1 border-2 border-gray-200 rounded-xl p-3 cursor-pointer hover:border-primary-300 transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                                <input type="radio" name="level" value="junior" checked class="sr-only">
+                                <span class="text-lg">&#x1F331;</span>
+                                <span class="text-sm font-medium">Junior</span>
+                            </label>
+                            <label class="flex flex-col items-center gap-1 border-2 border-gray-200 rounded-xl p-3 cursor-pointer hover:border-primary-300 transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                                <input type="radio" name="level" value="mid" class="sr-only">
+                                <span class="text-lg">&#x1F4BB;</span>
+                                <span class="text-sm font-medium">Middle</span>
+                            </label>
+                            <label class="flex flex-col items-center gap-1 border-2 border-gray-200 rounded-xl p-3 cursor-pointer hover:border-primary-300 transition-all has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                                <input type="radio" name="level" value="senior" class="sr-only">
+                                <span class="text-lg">&#x1F680;</span>
+                                <span class="text-sm font-medium">Senior</span>
+                            </label>
                         </div>
-                    </label>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Навыки <span class="text-gray-400 font-normal">(необязательно)</span></label>
+                        <input type="text" name="skills" class="input-field" placeholder="Python, Django, JavaScript...">
+                    </div>
+                </div>
+
+                <div id="hr-fields" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Название компании</label>
+                        <input type="text" name="company_name" class="input-field" placeholder="TechCorp">
+                    </div>
+                </div>
+
+                <div id="register-error" class="hidden mb-4 text-sm text-danger-700 bg-danger-50 p-4 rounded-xl border border-danger-100"></div>
+
+                <div class="flex gap-3">
+                    <button type="button" onclick="goToStep1()" class="btn-secondary flex-1 !py-3">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                        Назад
+                    </button>
+                    <button type="submit" id="submit-btn" class="btn-primary flex-[2] !py-3">Создать аккаунт</button>
                 </div>
             </div>
-            <div id="level-field" class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Уровень</label>
-                <select name="level" class="w-full border rounded-lg px-3 py-2 text-sm">
-                    <option value="junior">Junior</option>
-                    <option value="mid">Mid</option>
-                    <option value="senior">Senior</option>
-                </select>
-            </div>
-            <div id="register-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg"></div>
-            <button type="submit" class="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition">Создать аккаунт</button>
         </form>
-        <p class="text-center text-sm text-gray-500 mt-4">
-            Есть аккаунт? <a href="/login/" class="text-primary-600 hover:underline">Войти</a>
-        </p>
+
+        <div class="mt-6 pt-6 border-t text-center">
+            <p class="text-sm text-gray-500">
+                Уже есть аккаунт? <a href="/login/" class="text-primary-600 font-medium hover:underline">Войти</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -59,11 +132,84 @@
 <script>
     if (isLoggedIn()) window.location = '/';
 
+    function togglePassword(id, btn) {
+        const input = document.getElementById(id);
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.querySelector('.eye-open').classList.toggle('hidden', isPassword);
+        btn.querySelector('.eye-closed').classList.toggle('hidden', !isPassword);
+    }
+
+    document.getElementById('reg-password').addEventListener('input', function() {
+        const val = this.value;
+        const el = document.getElementById('password-strength');
+        if (!val) { el.innerHTML = ''; return; }
+        let strength = 0;
+        if (val.length >= 6) strength++;
+        if (val.length >= 10) strength++;
+        if (/[A-Z]/.test(val)) strength++;
+        if (/[0-9]/.test(val)) strength++;
+        if (/[^A-Za-z0-9]/.test(val)) strength++;
+        const labels = ['', 'Слабый', 'Слабый', 'Средний', 'Сильный', 'Отличный'];
+        const colors = ['', 'bg-danger-500', 'bg-warning-500', 'bg-warning-500', 'bg-success-500', 'bg-success-500'];
+        el.innerHTML = `<div class="flex gap-1">${[1,2,3,4,5].map(i => `<div class="h-1 flex-1 rounded-full ${i <= strength ? colors[strength] : 'bg-gray-200'}"></div>`).join('')}</div><div class="text-xs text-gray-500 mt-1">${labels[strength]}</div>`;
+    });
+
+    document.getElementById('reg-password2').addEventListener('input', function() {
+        const p1 = document.getElementById('reg-password').value;
+        const el = document.getElementById('password-match');
+        if (!this.value) { el.classList.add('hidden'); return; }
+        el.classList.remove('hidden');
+        if (this.value === p1) {
+            el.className = 'mt-1 text-xs text-success-600';
+            el.textContent = 'Пароли совпадают';
+        } else {
+            el.className = 'mt-1 text-xs text-danger-600';
+            el.textContent = 'Пароли не совпадают';
+        }
+    });
+
     document.querySelectorAll('input[name="role"]').forEach(r => {
         r.addEventListener('change', () => {
-            document.getElementById('level-field').style.display = r.value === 'hr' ? 'none' : 'block';
+            const isHR = document.querySelector('input[name="role"]:checked').value === 'hr';
+            document.getElementById('applicant-fields').classList.toggle('hidden', isHR);
+            document.getElementById('hr-fields').classList.toggle('hidden', !isHR);
         });
     });
+
+    function goToStep2() {
+        const form = document.getElementById('register-form');
+        const username = form.username.value.trim();
+        const email = form.email.value.trim();
+        const password = form.password.value;
+        const password2 = form.password2.value;
+
+        if (!username || !email || !password || !password2) {
+            toast('Заполните все поля', 'error'); return;
+        }
+        if (password !== password2) {
+            toast('Пароли не совпадают', 'error'); return;
+        }
+        if (password.length < 6) {
+            toast('Пароль минимум 6 символов', 'error'); return;
+        }
+
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
+        document.getElementById('step1-indicator').classList.remove('bg-primary-600');
+        document.getElementById('step1-indicator').classList.add('bg-success-500');
+        document.getElementById('step2-indicator').classList.remove('bg-gray-200');
+        document.getElementById('step2-indicator').classList.add('bg-primary-600');
+    }
+
+    function goToStep1() {
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step1').classList.remove('hidden');
+        document.getElementById('step1-indicator').classList.add('bg-primary-600');
+        document.getElementById('step1-indicator').classList.remove('bg-success-500');
+        document.getElementById('step2-indicator').classList.add('bg-gray-200');
+        document.getElementById('step2-indicator').classList.remove('bg-primary-600');
+    }
 
     async function handleRegister(e) {
         e.preventDefault();
@@ -71,9 +217,13 @@
         const errEl = document.getElementById('register-error');
         errEl.classList.add('hidden');
 
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Создание...';
+
         const data = {
-            username: form.username.value,
-            email: form.email.value,
+            username: form.username.value.trim(),
+            email: form.email.value.trim(),
             password: form.password.value,
             role: form.role.value,
         };
@@ -84,12 +234,14 @@
         try {
             const result = await api('/accounts/register/', { method: 'POST', body: data });
             saveAuth(result);
-            toast('Аккаунт создан!');
-            window.location = '/';
+            toast('Добро пожаловать!');
+            window.location = '/profile/';
         } catch (err) {
-            const msg = err.username ? err.username[0] : err.detail || 'Ошибка регистрации';
+            const msg = err.username ? err.username[0] : err.email ? err.email[0] : err.detail || 'Ошибка регистрации';
             errEl.textContent = msg;
             errEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Создать аккаунт';
         }
     }
 </script>

@@ -3,65 +3,87 @@
 
 {% block content %}
 <!-- Filters -->
-<div class="bg-white rounded-xl shadow-sm border p-4 mb-6">
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <input id="f-search" type="text" placeholder="Поиск..." class="border rounded-lg px-3 py-2 text-sm col-span-2" oninput="debounceLoad()">
-        <select id="f-level" class="border rounded-lg px-3 py-2 text-sm" onchange="loadJobs()">
-            <option value="">Все уровни</option>
-            <option value="junior">Junior</option>
-            <option value="mid">Mid</option>
-            <option value="senior">Senior</option>
-        </select>
-        <select id="f-remote" class="border rounded-lg px-3 py-2 text-sm" onchange="loadJobs()">
-            <option value="">Формат</option>
-            <option value="true">Удалённо</option>
-            <option value="false">Офис</option>
-        </select>
-        <select id="f-training" class="border rounded-lg px-3 py-2 text-sm" onchange="loadJobs()">
-            <option value="">Обучение</option>
-            <option value="true">С обучением</option>
-        </select>
-        <select id="f-ordering" class="border rounded-lg px-3 py-2 text-sm" onchange="loadJobs()">
-            <option value="-created_at">Новые</option>
-            <option value="-salary_max">Зарплата &darr;</option>
-            <option value="salary_min">Зарплата &uarr;</option>
-            <option value="-honesty_score">Честность &darr;</option>
-            <option value="experience_years">Опыт &uarr;</option>
-        </select>
+<div class="card p-5 mb-6">
+    <div class="flex items-center gap-3 mb-4">
+        <div class="relative flex-1">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="f-search" type="text" placeholder="Поиск по названию, компании, городу..." class="input-field !pl-10" oninput="debounceLoad()">
+        </div>
+        <button onclick="toggleFilters()" class="btn-secondary !py-2.5 flex items-center gap-2" id="filter-toggle">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            Фильтры
+        </button>
     </div>
-    <div class="flex gap-3 mt-3">
-        <input id="f-salary-min" type="number" placeholder="ЗП от (₸)" class="border rounded-lg px-3 py-2 text-sm w-32" onchange="loadJobs()">
-        <input id="f-salary-max" type="number" placeholder="ЗП до (₸)" class="border rounded-lg px-3 py-2 text-sm w-32" onchange="loadJobs()">
-        <input id="f-honesty" type="number" placeholder="Честность от %" class="border rounded-lg px-3 py-2 text-sm w-36" onchange="loadJobs()">
-        <button onclick="resetFilters()" class="text-sm text-gray-500 hover:text-red-500 ml-auto">Сбросить</button>
+
+    <div id="filters-panel" class="hidden">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <select id="f-level" class="input-field" onchange="loadJobs()">
+                <option value="">Все уровни</option>
+                <option value="junior">Junior</option>
+                <option value="mid">Middle</option>
+                <option value="senior">Senior</option>
+            </select>
+            <select id="f-remote" class="input-field" onchange="loadJobs()">
+                <option value="">Любой формат</option>
+                <option value="true">Удалённо</option>
+                <option value="false">В офисе</option>
+            </select>
+            <select id="f-training" class="input-field" onchange="loadJobs()">
+                <option value="">Обучение</option>
+                <option value="true">С обучением</option>
+            </select>
+            <select id="f-ordering" class="input-field" onchange="loadJobs()">
+                <option value="-created_at">Сначала новые</option>
+                <option value="-salary_max">Зарплата (больше)</option>
+                <option value="salary_min">Зарплата (меньше)</option>
+                <option value="-honesty_score">Честность (выше)</option>
+                <option value="experience_years">Опыт (меньше)</option>
+            </select>
+        </div>
+        <div class="flex flex-wrap gap-3 items-center">
+            <input id="f-salary-min" type="number" placeholder="ЗП от (₸)" class="input-field w-36" onchange="loadJobs()">
+            <input id="f-salary-max" type="number" placeholder="ЗП до (₸)" class="input-field w-36" onchange="loadJobs()">
+            <input id="f-honesty" type="number" placeholder="Честность от %" class="input-field w-40" onchange="loadJobs()">
+            <button onclick="resetFilters()" class="text-sm text-gray-400 hover:text-danger-500 ml-auto transition flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Сбросить
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Results count -->
+<!-- Results header -->
 <div class="flex justify-between items-center mb-4">
-    <span id="results-count" class="text-sm text-gray-500"></span>
-    <span id="compare-btn" class="hidden">
-        <button onclick="goToCompare()" class="bg-primary-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-primary-700">
-            Сравнить выбранные (<span id="compare-count">0</span>)
+    <span id="results-count" class="text-sm text-gray-500 font-medium"></span>
+    <div id="compare-btn" class="hidden">
+        <button onclick="goToCompare()" class="btn-primary !py-2 !text-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Сравнить (<span id="compare-count">0</span>)
         </button>
-    </span>
+    </div>
 </div>
 
 <!-- Job list -->
 <div id="job-list" class="space-y-3"></div>
 
 <!-- Pagination -->
-<div id="pagination" class="flex justify-center gap-2 mt-6"></div>
+<div id="pagination" class="flex justify-center gap-2 mt-8"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     let compareSet = new Set(JSON.parse(localStorage.getItem('compareSet') || '[]'));
     let debounceTimer;
+    let filtersVisible = false;
 
     function debounceLoad() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(loadJobs, 300);
+    }
+
+    function toggleFilters() {
+        filtersVisible = !filtersVisible;
+        document.getElementById('filters-panel').classList.toggle('hidden', !filtersVisible);
     }
 
     async function loadJobs(url) {
@@ -89,69 +111,84 @@
             const data = await api(endpoint);
             renderJobs(data);
         } catch(e) {
-            document.getElementById('job-list').innerHTML = '<p class="text-red-500">Ошибка загрузки</p>';
+            document.getElementById('job-list').innerHTML = '<p class="text-danger-500 text-center py-8">Ошибка загрузки</p>';
         }
     }
 
     function renderJobs(data) {
         const list = document.getElementById('job-list');
-        document.getElementById('results-count').textContent = `Найдено: ${data.count} вакансий`;
+        document.getElementById('results-count').textContent = `${data.count} вакансий`;
 
         if (!data.results || data.results.length === 0) {
-            list.innerHTML = '<p class="text-gray-500 text-center py-8">Вакансии не найдены</p>';
+            list.innerHTML = `
+                <div class="card p-12 text-center">
+                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <p class="text-gray-500 font-medium">Вакансии не найдены</p>
+                    <p class="text-gray-400 text-sm mt-1">Попробуйте изменить фильтры</p>
+                </div>`;
             return;
         }
 
         list.innerHTML = data.results.map(job => {
             const checked = compareSet.has(job.id) ? 'checked' : '';
-            const honestyColor = job.honesty_score >= 70 ? 'text-green-600' : job.honesty_score >= 40 ? 'text-yellow-600' : 'text-red-600';
+            const honestyPct = job.honesty_score || 0;
+            const honestyColor = honestyPct >= 70 ? 'text-success-600' : honestyPct >= 40 ? 'text-warning-600' : 'text-danger-600';
+            const honestyBg = honestyPct >= 70 ? 'bg-success-50' : honestyPct >= 40 ? 'bg-warning-50' : 'bg-danger-50';
             const overqualBadge = job.is_overqualified
-                ? '<span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Завышены</span>'
+                ? '<span class="text-xs px-2 py-0.5 rounded-lg bg-danger-50 text-danger-700 ring-1 ring-danger-200 font-medium">Завышены</span>'
                 : '';
             return `
-            <div class="bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition fade-in cursor-pointer" onclick="window.location='/jobs/${job.id}/'">
+            <div class="card p-5 cursor-pointer slide-up" onclick="window.location='/jobs/${job.id}/'">
                 <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <h3 class="font-semibold text-gray-900">${job.title}</h3>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 class="font-semibold text-gray-900 text-lg">${job.title}</h3>
                             ${levelBadge(job.level)}
-                            ${job.detected_level && job.detected_level !== job.level ? '<span class="text-xs text-red-500">&#8594; ' + job.detected_level + '</span>' : ''}
+                            ${job.detected_level && job.detected_level !== job.level
+                                ? `<span class="text-xs px-2 py-0.5 rounded-lg bg-danger-50 text-danger-600 font-medium">&#8594; ${job.detected_level}</span>`
+                                : ''}
                             ${overqualBadge}
                         </div>
-                        <div class="text-sm text-gray-500 mb-2">
-                            ${job.company} &middot; ${job.location}
-                            ${job.is_remote ? '<span class="text-primary-600 ml-1">&#127760; Remote</span>' : ''}
+                        <div class="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                            <span class="font-medium text-gray-700">${job.company}</span>
+                            <span class="text-gray-300">&#183;</span>
+                            <span>${job.location}</span>
+                            ${job.is_remote ? '<span class="text-primary-600 font-medium flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Remote</span>' : ''}
                         </div>
-                        <div class="flex flex-wrap gap-2 items-center text-xs">
-                            <span class="font-medium">${formatSalary(job.salary_min, job.salary_max)}</span>
-                            <span class="text-gray-300">|</span>
-                            <span class="${honestyColor}">Честность: ${job.honesty_score}%</span>
-                            <span class="text-gray-300">|</span>
-                            <span>${job.experience_years} лет опыта</span>
-                            ${job.training_provided ? '<span class="text-green-600">&#x2705; Обучение</span>' : ''}
+                        <div class="flex flex-wrap gap-4 items-center text-sm mb-3">
+                            <span class="font-semibold text-gray-900">${formatSalary(job.salary_min, job.salary_max)}</span>
+                            <span class="flex items-center gap-1 ${honestyColor} font-medium">
+                                <span class="inline-block w-2 h-2 rounded-full ${honestyBg} ${honestyColor}"></span>
+                                Честность: ${honestyPct}%
+                            </span>
+                            <span class="text-gray-500">${job.experience_years} лет опыта</span>
+                            ${job.training_provided ? '<span class="text-success-600 font-medium">&#10003; Обучение</span>' : ''}
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            ${(job.tech_stack || []).slice(0, 6).map(t => `<span class="text-xs px-2 py-0.5 bg-gray-100 rounded">${t}</span>`).join('')}
+                        <div class="flex flex-wrap gap-1.5">
+                            ${(job.tech_stack || []).slice(0, 8).map(t => `<span class="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg font-medium">${t}</span>`).join('')}
+                            ${(job.tech_stack || []).length > 8 ? `<span class="text-xs px-2.5 py-1 bg-gray-100 text-gray-400 rounded-lg">+${job.tech_stack.length - 8}</span>` : ''}
                         </div>
                     </div>
-                    <div class="flex flex-col items-end gap-2 ml-4" onclick="event.stopPropagation()">
-                        <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
-                            <input type="checkbox" ${checked} onchange="toggleCompare(${job.id})" class="rounded">
+                    <div class="flex flex-col items-end gap-3 ml-4 shrink-0" onclick="event.stopPropagation()">
+                        <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-primary-600 transition select-none">
+                            <input type="checkbox" ${checked} onchange="toggleCompare(${job.id})" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                             Сравнить
                         </label>
+                        <span class="text-xs text-gray-400">${timeAgo(job.created_at)}</span>
                     </div>
                 </div>
             </div>`;
         }).join('');
 
-        // Pagination
         const pg = document.getElementById('pagination');
         pg.innerHTML = '';
         if (data.previous) {
-            pg.innerHTML += `<button onclick="loadJobs('${data.previous.replace(window.location.origin, '')}')" class="px-3 py-1 bg-white border rounded text-sm hover:bg-gray-50">&larr; Назад</button>`;
+            pg.innerHTML += `<button onclick="loadJobs('${data.previous.replace(window.location.origin, '')}')" class="btn-secondary !py-2 !px-4 !text-sm">&larr; Назад</button>`;
         }
         if (data.next) {
-            pg.innerHTML += `<button onclick="loadJobs('${data.next.replace(window.location.origin, '')}')" class="px-3 py-1 bg-white border rounded text-sm hover:bg-gray-50">Далее &rarr;</button>`;
+            pg.innerHTML += `<button onclick="loadJobs('${data.next.replace(window.location.origin, '')}')" class="btn-secondary !py-2 !px-4 !text-sm">Далее &rarr;</button>`;
         }
 
         updateCompareBtn();
@@ -163,7 +200,7 @@
         } else if (compareSet.size < 4) {
             compareSet.add(jobId);
         } else {
-            alert('Максимум 4 вакансии для сравнения');
+            toast('Максимум 4 вакансии для сравнения', 'error');
             return;
         }
         localStorage.setItem('compareSet', JSON.stringify([...compareSet]));
@@ -181,9 +218,7 @@
         }
     }
 
-    function goToCompare() {
-        window.location = '/compare/?ids=' + [...compareSet].join(',');
-    }
+    function goToCompare() { window.location = '/compare/?ids=' + [...compareSet].join(','); }
 
     function resetFilters() {
         document.getElementById('f-search').value = '';
@@ -197,7 +232,6 @@
         loadJobs();
     }
 
-    function onUserChanged() { loadJobs(); }
     loadJobs();
     updateCompareBtn();
 </script>

@@ -2,9 +2,30 @@
 {% block title %}Заявки — JobPlatform{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-6" id="page-title">Заявки</h1>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900" id="page-title">Заявки</h1>
+        <p class="text-sm text-gray-500 mt-1" id="page-subtitle"></p>
+    </div>
+    <div id="status-filters" class="flex gap-2"></div>
+</div>
 <div id="applications-content" class="space-y-3">
-    <p class="text-gray-500">Загрузка...</p>
+    <div class="flex justify-center py-12">
+        <div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+    </div>
+</div>
+
+<!-- Profile Modal (HR sees applicant details) -->
+<div id="profile-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 slide-up">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Профиль кандидата</h2>
+            <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="profile-modal-content"></div>
+    </div>
 </div>
 {% endblock %}
 
@@ -14,72 +35,153 @@
 
     const profile = getProfile();
     const isHR = profile && profile.role === 'hr';
+    let currentStatusFilter = '';
 
     if (isHR) {
         document.getElementById('page-title').textContent = 'Отклики на вакансии';
+        document.getElementById('page-subtitle').textContent = 'Управляйте откликами кандидатов';
     } else {
         document.getElementById('page-title').textContent = 'Мои заявки';
+        document.getElementById('page-subtitle').textContent = 'Отслеживайте статус ваших откликов';
+    }
+
+    function renderStatusFilters() {
+        const filters = [
+            { value: '', label: 'Все', icon: '' },
+            { value: 'pending', label: 'Ожидают', color: 'warning' },
+            { value: 'reviewed', label: 'Просмотрено', color: 'blue' },
+            { value: 'accepted', label: 'Принято', color: 'success' },
+            { value: 'rejected', label: 'Отклонено', color: 'danger' },
+        ];
+        document.getElementById('status-filters').innerHTML = filters.map(f =>
+            `<button onclick="filterByStatus('${f.value}')" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${currentStatusFilter === f.value ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${f.label}</button>`
+        ).join('');
+    }
+
+    function filterByStatus(status) {
+        currentStatusFilter = status;
+        renderStatusFilters();
+        loadApplications();
     }
 
     async function loadApplications() {
         try {
-            const data = await api('/applications/');
+            let url = '/applications/';
+            if (currentStatusFilter) url += `?status=${currentStatusFilter}`;
+            const data = await api(url);
             const container = document.getElementById('applications-content');
 
             if (!data.results || data.results.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white rounded-xl border p-8 text-center">
-                        <p class="text-gray-500 mb-4">${isHR ? 'Пока нет откликов на ваши вакансии' : 'Вы ещё не откликались на вакансии'}</p>
-                        ${!isHR ? '<a href="/jobs/" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm">Смотреть вакансии</a>' : ''}
+                    <div class="card p-12 text-center">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <p class="text-gray-500 font-medium mb-2">${isHR ? 'Пока нет откликов' : 'Вы ещё не откликались'}</p>
+                        ${!isHR ? '<a href="/jobs/" class="btn-primary inline-block !text-sm mt-2">Смотреть вакансии</a>' : ''}
                     </div>`;
                 return;
             }
 
             container.innerHTML = data.results.map(app => {
-                const statusColors = {
-                    pending: 'bg-yellow-100 text-yellow-700',
-                    reviewed: 'bg-blue-100 text-blue-700',
-                    accepted: 'bg-green-100 text-green-700',
-                    rejected: 'bg-red-100 text-red-700',
+                const statusConfig = {
+                    pending: { label: 'На рассмотрении', bg: 'bg-warning-50', text: 'text-warning-700', ring: 'ring-warning-200', icon: '&#9201;' },
+                    reviewed: { label: 'Просмотрено', bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200', icon: '&#128065;' },
+                    accepted: { label: 'Принято', bg: 'bg-success-50', text: 'text-success-700', ring: 'ring-success-200', icon: '&#10003;' },
+                    rejected: { label: 'Отклонено', bg: 'bg-danger-50', text: 'text-danger-700', ring: 'ring-danger-200', icon: '&#10007;' },
                 };
-                const statusLabels = {
-                    pending: 'На рассмотрении',
-                    reviewed: 'Просмотрено',
-                    accepted: 'Принято',
-                    rejected: 'Отклонено',
-                };
+                const st = statusConfig[app.status] || statusConfig.pending;
+
+                const profileData = app.applicant_profile ? JSON.stringify(app.applicant_profile).replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
 
                 return `
-                <div class="bg-white rounded-xl border shadow-sm p-4 fade-in">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
-                                <a href="/jobs/${app.job}/" class="font-semibold text-gray-900 hover:text-primary-600">${app.job_title}</a>
-                                <span class="text-xs px-2 py-0.5 rounded-full ${statusColors[app.status] || 'bg-gray-100'}">${statusLabels[app.status] || app.status}</span>
+                <div class="card p-5 slide-up">
+                    <div class="flex flex-col md:flex-row justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                <a href="/jobs/${app.job}/" class="font-semibold text-gray-900 hover:text-primary-600 transition text-lg">${app.job_title}</a>
+                                <span class="text-xs px-2.5 py-1 rounded-lg ${st.bg} ${st.text} ring-1 ${st.ring} font-medium">${st.icon} ${st.label}</span>
                             </div>
-                            <div class="text-sm text-gray-500">${app.job_company}</div>
-                            ${isHR ? `<div class="text-sm text-gray-600 mt-1">Кандидат: <strong>${app.applicant_username}</strong></div>` : ''}
-                            <div class="text-xs text-gray-400 mt-1">${new Date(app.created_at).toLocaleDateString('ru')}</div>
+                            <div class="text-sm text-gray-500 mb-2">${app.job_company}</div>
+                            ${app.cover_letter ? `
+                                <div class="bg-gray-50 rounded-xl p-3 mt-2">
+                                    <div class="text-xs text-gray-400 mb-1 font-medium">Сопроводительное письмо</div>
+                                    <p class="text-sm text-gray-600">${app.cover_letter}</p>
+                                </div>
+                            ` : ''}
+                            ${isHR ? `
+                                <div class="flex items-center gap-3 mt-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-700">
+                                            ${app.applicant_username[0].toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-900">${app.applicant_username}</span>
+                                            ${app.applicant_profile ? `<span class="text-xs text-gray-500 ml-1">${app.applicant_profile.level || ''}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    ${app.applicant_profile ? `
+                                        <button onclick='showProfile(${profileData})' class="text-xs text-primary-600 hover:text-primary-700 font-medium hover:underline">
+                                            Посмотреть профиль
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            <div class="text-xs text-gray-400 mt-2">${timeAgo(app.created_at)}</div>
                         </div>
                         ${isHR ? `
-                        <div class="flex gap-2 ml-4">
-                            <select onchange="updateStatus(${app.id}, this.value)" class="text-xs border rounded px-2 py-1">
-                                <option value="">Изменить статус</option>
-                                <option value="reviewed">Просмотрено</option>
-                                <option value="accepted">Принять</option>
-                                <option value="rejected">Отклонить</option>
-                            </select>
+                        <div class="flex items-start gap-2 shrink-0">
+                            ${app.status !== 'accepted' ? `<button onclick="updateStatus(${app.id}, 'accepted')" class="text-xs px-3 py-1.5 rounded-lg bg-success-50 text-success-700 hover:bg-success-100 font-medium transition">Принять</button>` : ''}
+                            ${app.status !== 'reviewed' ? `<button onclick="updateStatus(${app.id}, 'reviewed')" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition">Просмотрено</button>` : ''}
+                            ${app.status !== 'rejected' ? `<button onclick="updateStatus(${app.id}, 'rejected')" class="text-xs px-3 py-1.5 rounded-lg bg-danger-50 text-danger-700 hover:bg-danger-100 font-medium transition">Отклонить</button>` : ''}
                         </div>` : ''}
                     </div>
                 </div>`;
             }).join('');
         } catch(e) {
-            document.getElementById('applications-content').innerHTML = '<p class="text-red-500">Ошибка загрузки</p>';
+            document.getElementById('applications-content').innerHTML = '<p class="text-danger-500 text-center py-8">Ошибка загрузки</p>';
         }
     }
 
+    function showProfile(profileData) {
+        const p = typeof profileData === 'string' ? JSON.parse(profileData) : profileData;
+        const content = document.getElementById('profile-modal-content');
+        content.innerHTML = `
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-700">
+                    ${p.user.username[0].toUpperCase()}
+                </div>
+                <div>
+                    <div class="text-lg font-semibold">${p.user.username}</div>
+                    <div class="text-sm text-gray-500">${p.user.email}</div>
+                    <div class="flex gap-2 mt-1">
+                        ${levelBadge(p.level || 'junior')}
+                        ${p.user.first_name || p.user.last_name ? `<span class="text-sm text-gray-600">${p.user.first_name || ''} ${p.user.last_name || ''}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+            ${p.bio ? `<div class="mb-4"><div class="text-xs text-gray-400 font-medium mb-1">О себе</div><p class="text-sm text-gray-600">${p.bio}</p></div>` : ''}
+            ${p.skills && p.skills.length ? `
+                <div class="mb-4">
+                    <div class="text-xs text-gray-400 font-medium mb-2">Навыки</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${p.skills.map(s => `<span class="text-xs px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg font-medium">${s}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            <div class="flex gap-3 flex-wrap">
+                ${p.portfolio_url ? `<a href="${p.portfolio_url}" target="_blank" class="btn-secondary !py-2 !text-xs flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Портфолио</a>` : ''}
+                ${p.github_url ? `<a href="${p.github_url}" target="_blank" class="btn-secondary !py-2 !text-xs flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</a>` : ''}
+            </div>
+        `;
+        document.getElementById('profile-modal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profile-modal').classList.add('hidden');
+    }
+
     async function updateStatus(appId, status) {
-        if (!status) return;
         try {
             await api(`/applications/${appId}/status/`, { method: 'PATCH', body: { status } });
             toast('Статус обновлён!');
@@ -89,6 +191,7 @@
         }
     }
 
+    renderStatusFilters();
     loadApplications();
 </script>
 {% endblock %}

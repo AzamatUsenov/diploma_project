@@ -1,37 +1,52 @@
 {% extends "base.html" %}
-{% block title %}JobPlatform — Поиск работы{% endblock %}
+{% block title %}JobPlatform — Честный поиск работы{% endblock %}
 
 {% block content %}
-<div class="py-12 text-center">
-    <h1 class="text-4xl font-bold text-gray-900 mb-3">Найди работу мечты</h1>
-    <p class="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
-        Платформа с умным анализатором требований. Мы покажем реальный уровень вакансии и подскажем, стоит ли подавать заявку.
+<div class="py-16 text-center fade-in">
+    <div class="inline-flex items-center gap-2 bg-primary-50 text-primary-700 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Умный анализ требований вакансий
+    </div>
+    <h1 class="text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">
+        Найди работу<br><span class="gradient-text">без завышенных требований</span>
+    </h1>
+    <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+        Мы анализируем вакансии и показываем реальный уровень требований. Больше никаких "3 года опыта для Junior".
     </p>
-    <div class="flex justify-center gap-4 mb-12">
-        <a href="/jobs/" class="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition">Смотреть вакансии</a>
-        <a href="/tests/" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">Пройти тест</a>
+    <div class="flex justify-center gap-4 mb-16">
+        <a href="/jobs/" class="btn-primary text-base !px-8 !py-3">
+            Смотреть вакансии
+            <svg class="w-5 h-5 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </a>
+        <a href="/tests/" class="btn-secondary text-base !px-8 !py-3">Пройти тест</a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-        <div class="bg-white p-6 rounded-xl shadow-sm border">
-            <div class="text-3xl mb-3">&#x1F50D;</div>
-            <h3 class="font-semibold mb-1">Анализатор требований</h3>
-            <p class="text-sm text-gray-500">Определяем реальный уровень вакансии и честность требований</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
+        <div class="card p-8 text-left slide-up" style="animation-delay: 0.1s">
+            <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Анализатор требований</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Определяем реальный уровень вакансии, честность требований и находим завышенные ожидания</p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border">
-            <div class="text-3xl mb-3">&#x2696;</div>
-            <h3 class="font-semibold mb-1">Сравнение вакансий</h3>
-            <p class="text-sm text-gray-500">Сравнивай 2-4 вакансии: зарплата, матч, честность, вердикт</p>
+        <div class="card p-8 text-left slide-up" style="animation-delay: 0.2s">
+            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Сравнение вакансий</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Сравнивай до 4 вакансий по зарплате, честности, матчу навыков и получай вердикт</p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border">
-            <div class="text-3xl mb-3">&#x1F4DD;</div>
-            <h3 class="font-semibold mb-1">Тесты навыков</h3>
-            <p class="text-sm text-gray-500">Подтверди свои знания Python, JS, Django, React, SQL</p>
+        <div class="card p-8 text-left slide-up" style="animation-delay: 0.3s">
+            <div class="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Тесты навыков</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Подтверди свои знания Python, JS, React и других технологий, повысь свой матч-скор</p>
         </div>
     </div>
 </div>
 
-<div id="stats" class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"></div>
+<div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-12"></div>
 {% endblock %}
 
 {% block extra_js %}
@@ -39,22 +54,23 @@
     async function loadStats() {
         try {
             const jobs = await api('/jobs/');
+            const results = jobs.results || [];
             document.getElementById('stats').innerHTML = `
-                <div class="bg-white p-4 rounded-lg border text-center">
-                    <div class="text-2xl font-bold text-primary-600">${jobs.count}</div>
-                    <div class="text-xs text-gray-500">Вакансий</div>
+                <div class="card p-6 text-center slide-up">
+                    <div class="text-3xl font-bold gradient-text">${jobs.count}</div>
+                    <div class="text-sm text-gray-500 mt-1">Вакансий</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg border text-center">
-                    <div class="text-2xl font-bold text-green-600">${(jobs.results || []).filter(j => j.training_provided).length}+</div>
-                    <div class="text-xs text-gray-500">С обучением</div>
+                <div class="card p-6 text-center slide-up" style="animation-delay:0.1s">
+                    <div class="text-3xl font-bold text-success-600">${results.filter(j => j.training_provided).length}+</div>
+                    <div class="text-sm text-gray-500 mt-1">С обучением</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg border text-center">
-                    <div class="text-2xl font-bold text-purple-600">${(jobs.results || []).filter(j => j.level === 'junior').length}</div>
-                    <div class="text-xs text-gray-500">Junior вакансий</div>
+                <div class="card p-6 text-center slide-up" style="animation-delay:0.2s">
+                    <div class="text-3xl font-bold text-purple-600">${results.filter(j => j.level === 'junior').length}</div>
+                    <div class="text-sm text-gray-500 mt-1">Junior вакансий</div>
                 </div>
-                <div class="bg-white p-4 rounded-lg border text-center">
-                    <div class="text-2xl font-bold text-orange-600">${(jobs.results || []).filter(j => j.is_remote).length}</div>
-                    <div class="text-xs text-gray-500">Удалённых</div>
+                <div class="card p-6 text-center slide-up" style="animation-delay:0.3s">
+                    <div class="text-3xl font-bold text-blue-600">${results.filter(j => j.is_remote).length}</div>
+                    <div class="text-sm text-gray-500 mt-1">Удалённых</div>
                 </div>
             `;
         } catch(e) { console.error(e); }

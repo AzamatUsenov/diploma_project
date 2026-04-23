@@ -6,8 +6,13 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from .frontend_views import (
     IndexView, JobsListView, JobDetailView, JobCreateView,
     CompareView, TestsListView,
-    LoginView, RegisterView, ProfileView, ApplicationsView, FavoritesView,
+    LoginView, RegisterView, ProfileView, PublicProfileView,
+    ApplicationsView, FavoritesView,
 )
+
+admin.site.site_header = 'JobPlatform — Администрирование'
+admin.site.site_title = 'JobPlatform Admin'
+admin.site.index_title = 'Панель управления'
 
 urlpatterns = [
     # Admin
@@ -35,6 +40,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='frontend_login'),
     path('register/', RegisterView.as_view(), name='frontend_register'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('profile/<int:pk>/', PublicProfileView.as_view(), name='public_profile'),
     path('applications/', ApplicationsView.as_view(), name='applications'),
     path('favorites/', FavoritesView.as_view(), name='favorites'),
 ]

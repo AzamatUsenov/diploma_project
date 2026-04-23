@@ -6,5 +6,6 @@ router = DefaultRouter()
 router.register('', views.ApplicationViewSet, basename='application')
 
 urlpatterns = [
+    path('stats/', views.hr_stats_view, name='hr-stats'),
     path('', include(router.urls)),
 ]

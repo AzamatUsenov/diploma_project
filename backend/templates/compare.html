@@ -2,12 +2,20 @@
 {% block title %}Сравнение вакансий — JobPlatform{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="/jobs/" class="text-sm text-primary-600 hover:underline">&larr; К вакансиям</a>
-    <h1 class="text-2xl font-bold mt-2">Сравнение вакансий</h1>
+<div class="mb-6">
+    <a href="/jobs/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        К вакансиям
+    </a>
+    <h1 class="text-2xl font-bold mt-2 flex items-center gap-2">
+        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Сравнение вакансий
+    </h1>
 </div>
 <div id="compare-content">
-    <p class="text-gray-500">Загрузка...</p>
+    <div class="flex justify-center py-12">
+        <div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+    </div>
 </div>
 {% endblock %}
 
@@ -18,16 +26,20 @@
         const idsStr = params.get('ids');
         if (!idsStr) {
             document.getElementById('compare-content').innerHTML = `
-                <div class="bg-white rounded-xl border p-8 text-center">
-                    <p class="text-gray-500 mb-4">Выберите 2-4 вакансии для сравнения на странице вакансий</p>
-                    <a href="/jobs/" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm">К вакансиям</a>
+                <div class="card p-12 text-center">
+                    <div class="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <p class="text-gray-500 font-medium mb-2">Выберите 2-4 вакансии для сравнения</p>
+                    <p class="text-gray-400 text-sm mb-4">Отметьте галочками на странице вакансий</p>
+                    <a href="/jobs/" class="btn-primary inline-block">К вакансиям</a>
                 </div>`;
             return;
         }
 
         const jobIds = idsStr.split(',').map(Number).filter(Boolean);
         if (jobIds.length < 2) {
-            document.getElementById('compare-content').innerHTML = '<p class="text-red-500">Нужно минимум 2 вакансии</p>';
+            document.getElementById('compare-content').innerHTML = '<div class="card p-8 text-center"><p class="text-danger-500">Нужно минимум 2 вакансии</p></div>';
             return;
         }
 
@@ -37,7 +49,7 @@
             const data = await api('/analytics/compare/', { method: 'POST', body: { job_ids: jobIds } });
             renderComparison(data);
         } catch(e) {
-            document.getElementById('compare-content').innerHTML = '<p class="text-red-500">Ошибка сравнения</p>';
+            document.getElementById('compare-content').innerHTML = '<p class="text-danger-500 text-center py-8">Ошибка сравнения</p>';
         }
     }
 
@@ -48,76 +60,118 @@
 
         const container = document.getElementById('compare-content');
         container.innerHTML = `
-            <div class="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="text-lg">&#x1F3C6;</span>
-                    <span class="font-semibold text-primary-800">Вердикт</span>
+            <!-- Verdict -->
+            <div class="card p-6 mb-6 bg-gradient-to-r from-primary-50 to-purple-50 border-primary-200 slide-up">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-primary-900 mb-1">Вердикт</div>
+                        <p class="text-sm text-primary-800">${verdict.explanation}</p>
+                    </div>
                 </div>
-                <p class="text-sm text-primary-700">${verdict.explanation}</p>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full bg-white rounded-xl border shadow-sm">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="p-3 text-left text-sm font-medium text-gray-500 w-40">Параметр</th>
-                            ${jobs.map(j => `
-                                <th class="p-3 text-center ${j.id === verdict.winner_id ? 'bg-primary-50' : ''}">
-                                    <div class="font-semibold text-sm">${j.title}</div>
-                                    <div class="text-xs text-gray-500">${j.company}</div>
-                                    ${j.id === verdict.winner_id ? '<div class="text-xs text-primary-600 mt-1">&#x1F3C6; Лучший выбор</div>' : ''}
-                                </th>
-                            `).join('')}
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        ${compRow('Уровень', jobs.map(j => levelBadge(j.level) + (j.analysis && j.analysis.detected_level !== j.level ? ` <span class="text-xs text-red-500">&#8594; ${j.analysis.detected_level}</span>` : '')))}
-                        ${compRow('Зарплата', jobs.map(j => `<span class="font-medium">${formatSalary(j.salary_min, j.salary_max)}</span>`), comp.best_salary, jobs)}
-                        ${compRow('Честность', jobs.map(j => {
-                            const s = j.analysis ? j.analysis.honesty_score : 0;
-                            const c = s >= 70 ? 'text-green-600' : s >= 40 ? 'text-yellow-600' : 'text-red-600';
-                            return `<span class="font-bold ${c}">${s}%</span><br>${scoreBar(s)}`;
-                        }), comp.most_honest, jobs)}
-                        ${jobs[0] && jobs[0].match ? compRow('Матч', jobs.map(j => {
-                            const s = j.match ? j.match.match_score : 0;
-                            const c = s >= 70 ? 'text-green-600' : s >= 40 ? 'text-yellow-600' : 'text-red-600';
-                            return `<span class="font-bold ${c}">${s}%</span><br>${scoreBar(s)}`;
-                        }), comp.best_match, jobs) : ''}
-                        ${compRow('Локация', jobs.map(j => `${j.location}${j.is_remote ? '<br><span class="text-xs text-primary-600">&#127760; Remote</span>' : ''}`))}
-                        ${compRow('Опыт', jobs.map(j => `${j.experience_years} лет`))}
-                        ${compRow('Обучение', jobs.map(j => j.training_provided ? '<span class="text-green-600">&#x2705; Да</span>' : '<span class="text-gray-400">&#x274C; Нет</span>'))}
-                        ${compRow('Навыки', jobs.map(j => `<div class="flex flex-wrap gap-1 justify-center">${(j.analysis ? j.analysis.parsed_skills : []).slice(0, 8).map(s => `<span class="text-xs px-1.5 py-0.5 bg-gray-100 rounded">${s}</span>`).join('')}</div>`))}
-                        ${jobs[0] && jobs[0].scores ? compRow('Общий балл', jobs.map(j => {
-                            const s = j.scores ? j.scores.overall_score : 0;
-                            const c = s >= 60 ? 'text-green-600' : s >= 40 ? 'text-yellow-600' : 'text-red-600';
-                            return `<span class="text-xl font-bold ${c}">${s}</span>`;
-                        })) : ''}
-                    </tbody>
-                </table>
+            <!-- Job Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-${jobs.length} gap-4 mb-6">
+                ${jobs.map(j => {
+                    const isWinner = j.id === verdict.winner_id;
+                    return `
+                    <div class="card p-5 relative ${isWinner ? 'ring-2 ring-primary-500' : ''} slide-up">
+                        ${isWinner ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full">Лучший выбор</div>' : ''}
+                        <h3 class="font-semibold text-lg text-gray-900 mb-1">${j.title}</h3>
+                        <p class="text-sm text-gray-500 mb-3">${j.company} &#183; ${j.location}</p>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500">Зарплата</span>
+                                <span class="font-semibold text-sm ${j.id === comp.best_salary ? 'text-success-600' : ''}">${formatSalary(j.salary_min, j.salary_max)}</span>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs text-gray-500">Честность</span>
+                                    <span class="font-bold text-sm ${j.analysis.honesty_score >= 70 ? 'text-success-600' : j.analysis.honesty_score >= 40 ? 'text-warning-600' : 'text-danger-600'}">${j.analysis.honesty_score}%</span>
+                                </div>
+                                ${scoreBar(j.analysis.honesty_score)}
+                            </div>
+                            ${j.match ? `
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs text-gray-500">Матч</span>
+                                    <span class="font-bold text-sm ${j.match.match_score >= 70 ? 'text-success-600' : j.match.match_score >= 40 ? 'text-warning-600' : 'text-danger-600'}">${j.match.match_score}%</span>
+                                </div>
+                                ${scoreBar(j.match.match_score)}
+                            </div>` : ''}
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500">Уровень</span>
+                                <div class="flex items-center gap-1">
+                                    ${levelBadge(j.level)}
+                                    ${j.analysis.detected_level !== j.level ? `<span class="text-xs text-danger-500">&#8594; ${j.analysis.detected_level}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500">Опыт</span>
+                                <span class="text-sm">${j.experience_years} лет</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500">Формат</span>
+                                <span class="text-sm">${j.is_remote ? '<span class="text-primary-600">Remote</span>' : 'Офис'}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500">Обучение</span>
+                                <span class="text-sm">${j.training_provided ? '<span class="text-success-600">&#10003; Да</span>' : '<span class="text-gray-400">Нет</span>'}</span>
+                            </div>
+                            ${j.scores ? `
+                            <div class="pt-3 border-t">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs text-gray-500 font-medium">Общий балл</span>
+                                    <span class="text-xl font-bold ${j.scores.overall_score >= 60 ? 'text-success-600' : j.scores.overall_score >= 40 ? 'text-warning-600' : 'text-danger-600'}">${j.scores.overall_score}</span>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                        <a href="/jobs/${j.id}/" class="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium">Подробнее &#8594;</a>
+                    </div>`;
+                }).join('')}
             </div>
 
-            ${comp.common_skills && comp.common_skills.length ? `
-            <div class="bg-white rounded-xl border shadow-sm p-4 mt-6">
-                <h3 class="font-medium text-sm mb-2">Общие навыки:</h3>
-                <div class="flex flex-wrap gap-1">
-                    ${comp.common_skills.map(s => `<span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${s}</span>`).join('')}
-                </div>
-            </div>` : ''}
+            <!-- Skills comparison -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                ${comp.common_skills && comp.common_skills.length ? `
+                <div class="card p-5 slide-up">
+                    <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        Общие навыки (${comp.common_skills.length})
+                    </h3>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${comp.common_skills.map(s => `<span class="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-medium">${s}</span>`).join('')}
+                    </div>
+                </div>` : ''}
 
-            <div class="mt-4 text-center">
-                <button onclick="clearCompare()" class="text-sm text-gray-500 hover:text-red-500">Очистить сравнение</button>
+                <div class="card p-5 slide-up">
+                    <h3 class="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                        Уникальные навыки
+                    </h3>
+                    <div class="space-y-3">
+                        ${jobs.map(j => {
+                            const unique = comp.unique_skills[j.id] || [];
+                            if (!unique.length) return '';
+                            return `<div>
+                                <div class="text-xs text-gray-500 mb-1">${j.title}</div>
+                                <div class="flex flex-wrap gap-1">${unique.map(s => `<span class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg">${s}</span>`).join('')}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="clearCompare()" class="btn-ghost text-gray-400 hover:text-danger-500">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Очистить сравнение
+                </button>
             </div>
         `;
-    }
-
-    function compRow(label, values, bestId, jobs) {
-        return `<tr class="hover:bg-gray-50">
-            <td class="p-3 text-sm text-gray-500 font-medium">${label}</td>
-            ${values.map((v, i) => {
-                const isBest = bestId && jobs && jobs[i].id === bestId;
-                return `<td class="p-3 text-center text-sm ${isBest ? 'bg-green-50' : ''}">${v}</td>`;
-            }).join('')}
-        </tr>`;
     }
 
     function clearCompare() {
