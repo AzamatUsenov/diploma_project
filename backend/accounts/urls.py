@@ -9,6 +9,7 @@ router.register('profiles', views.UserProfileViewSet)
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('login/', views.LoginView.as_view(), name='login'),
+    path('csrf/', views.GetCSRFTokenView.as_view(), name='csrf'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include(router.urls)),
 ]

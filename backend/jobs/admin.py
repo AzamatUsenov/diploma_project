@@ -28,7 +28,7 @@ class JobAdmin(admin.ModelAdmin):
     def salary_range(self, obj):
         def fmt(n):
             return f'{n // 1000}K' if n else '?'
-        return f'{fmt(obj.salary_min)} – {fmt(obj.salary_max)} ₸'
+        return f'{fmt(obj.salary_min)} – {fmt(obj.salary_max)} сўм'
 
     @admin.display(description='Честность', ordering='honesty_score')
     def honesty_badge(self, obj):

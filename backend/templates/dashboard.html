@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Дашборд — JobPlatform{% endblock %}
+
+{% block content %}
+<div id="dashboard-page">
+    <div class="flex justify-center py-12">
+        <div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (!isLoggedIn()) { window.location = '/login/'; }
+
+    async function loadDashboard() {
+        const profile = getProfile();
+        if (!profile) return;
+        const isHR = profile.role === 'hr';
+        const page = document.getElementById('dashboard-page');
+
+        try {
+            const [apps, favs, jobs] = await Promise.all([
+                api('/applications/').catch(() => ({ results: [], count: 0 })),
+                api('/analytics/favorites/').catch(() => ({ results: [], count: 0 })),
+                api('/jobs/?ordering=-created_at').catch(() => ({ results: [], count: 0 })),
+            ]);
+
+            let testResults = { results: [] };
+            if (!isHR) {
+                testResults = await api('/tests/results/').catch(() => ({ results: [] }));
+            }
+
+            const greeting = getGreeting();
+            const appsList = apps.results || [];
+            const favsList = favs.results || [];
+            const jobsList = jobs.results || [];
+            const testsList = testResults.results || [];
+
+            const pendingApps = appsList.filter(a => a.status === 'pending').length;
+            const acceptedApps = appsList.filter(a => a.status === 'accepted').length;
+            const passedTests = testsList.filter(t => t.status === 'passed').length;
+
+            page.innerHTML = `
+                <!-- Greeting -->
+                <div class="mb-8 slide-up">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-400 to-purple-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-primary-500/25">
+                            ${profile.user.username[0].toUpperCase()}
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">${greeting}, ${profile.user.first_name || profile.user.username}!</h1>
+                            <p class="text-gray-500 text-sm">${isHR ? 'Вот обзор ваших вакансий и откликов' : 'Вот ваша сводка по поиску работы'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick stats -->
+                <div class="grid grid-cols-2 ${isHR ? 'md:grid-cols-3' : 'md:grid-cols-4'} gap-4 mb-8">
+                    ${!isHR ? `
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.05s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">Мои заявки</span>
+                            <div class="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-gray-900">${appsList.length}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">${pendingApps} на рассмотрении</div>
+                    </div>
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.1s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">Принято</span>
+                            <div class="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black ${acceptedApps > 0 ? 'text-success-600' : 'text-gray-900'}">${acceptedApps}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">из ${appsList.length} откликов</div>
+                    </div>
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.15s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">Тесты сданы</span>
+                            <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-gray-900">${passedTests}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">из ${testsList.length} попыток</div>
+                    </div>
+                    ` : `
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.05s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">Отклики</span>
+                            <div class="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-gray-900">${appsList.length}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">${pendingApps} новых</div>
+                    </div>
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.1s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">Принято</span>
+                            <div class="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-success-600">${acceptedApps}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">кандидатов</div>
+                    </div>
+                    `}
+                    <div class="card-static p-5 slide-up" style="animation-delay:0.2s">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">В избранном</span>
+                            <div class="w-8 h-8 rounded-lg bg-danger-50 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-danger-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-gray-900">${favsList.length}</div>
+                        <div class="text-xs text-gray-400 mt-0.5">вакансий сохранено</div>
+                    </div>
+                </div>
+
+                <!-- Two columns -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Recent applications -->
+                    <div class="card-static p-6 slide-up" style="animation-delay:0.25s">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-bold text-gray-900">${isHR ? 'Последние отклики' : 'Мои заявки'}</h2>
+                            <a href="/applications/" class="text-xs text-primary-600 font-medium hover:text-primary-700">Все &#8594;</a>
+                        </div>
+                        ${appsList.length ? appsList.slice(0, 5).map(app => {
+                            const st = { pending: { label: 'Ожидает', bg: 'bg-warning-50 text-warning-700' }, reviewed: { label: 'Просмотрено', bg: 'bg-blue-50 text-blue-700' }, accepted: { label: 'Принято', bg: 'bg-success-50 text-success-700' }, rejected: { label: 'Отклонено', bg: 'bg-danger-50 text-danger-700' } }[app.status] || { label: app.status, bg: 'bg-gray-100' };
+                            return `
+                            <div class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                                <div class="min-w-0 flex-1">
+                                    <a href="/jobs/${app.job}/" class="text-sm font-medium text-gray-900 hover:text-primary-600 transition truncate block">${app.job_title}</a>
+                                    <div class="text-xs text-gray-400 mt-0.5">${app.job_company} &middot; ${timeAgo(app.created_at)}</div>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded-lg font-medium ${st.bg} shrink-0 ml-3">${st.label}</span>
+                            </div>`;
+                        }).join('') : `
+                        <div class="text-center py-6">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <p class="text-sm text-gray-500">Пока нет заявок</p>
+                            ${!isHR ? '<a href="/jobs/" class="text-sm text-primary-600 font-medium hover:underline">Смотреть вакансии &#8594;</a>' : ''}
+                        </div>`}
+                    </div>
+
+                    <!-- Quick actions / favorites -->
+                    <div class="card-static p-6 slide-up" style="animation-delay:0.3s">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-bold text-gray-900">Быстрые действия</h2>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <a href="/jobs/" class="p-4 rounded-xl bg-gray-50 hover:bg-primary-50 transition group text-center">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-primary-600 transition mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <div class="text-sm font-medium text-gray-700 group-hover:text-primary-700 transition">Поиск вакансий</div>
+                            </a>
+                            <a href="/tests/" class="p-4 rounded-xl bg-gray-50 hover:bg-purple-50 transition group text-center">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-purple-600 transition mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                                <div class="text-sm font-medium text-gray-700 group-hover:text-purple-700 transition">Пройти тест</div>
+                            </a>
+                            <a href="/profile/" class="p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 transition group text-center">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-emerald-600 transition mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <div class="text-sm font-medium text-gray-700 group-hover:text-emerald-700 transition">Мой профиль</div>
+                            </a>
+                            ${isHR ? `
+                            <a href="/jobs/create/" class="p-4 rounded-xl bg-gray-50 hover:bg-success-50 transition group text-center">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-success-600 transition mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <div class="text-sm font-medium text-gray-700 group-hover:text-success-700 transition">Новая вакансия</div>
+                            </a>` : `
+                            <a href="/favorites/" class="p-4 rounded-xl bg-gray-50 hover:bg-pink-50 transition group text-center">
+                                <svg class="w-6 h-6 text-gray-400 group-hover:text-pink-600 transition mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                <div class="text-sm font-medium text-gray-700 group-hover:text-pink-700 transition">Избранное</div>
+                            </a>`}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Latest jobs -->
+                <div class="card-static p-6 slide-up" style="animation-delay:0.35s">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-gray-900">Свежие вакансии</h2>
+                        <a href="/jobs/" class="text-xs text-primary-600 font-medium hover:text-primary-700">Все &#8594;</a>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        ${jobsList.slice(0, 6).map(job => {
+                            const hc = (job.honesty_score || 0) >= 70 ? 'text-success-600' : (job.honesty_score || 0) >= 40 ? 'text-warning-600' : 'text-danger-600';
+                            return `
+                            <a href="/jobs/${job.id}/" class="p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover:bg-primary-50/30 transition group block">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="font-medium text-sm text-gray-900 group-hover:text-primary-700 transition truncate">${job.title}</span>
+                                    ${levelBadge(job.level)}
+                                </div>
+                                <div class="text-xs text-gray-500 mb-1.5">${job.company}</div>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span class="font-semibold text-gray-700">${formatSalary(job.salary_min, job.salary_max)}</span>
+                                    <span class="${hc} font-medium">${job.honesty_score || 0}%</span>
+                                </div>
+                            </a>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        } catch(e) {
+            page.innerHTML = '<p class="text-danger-500 text-center py-12">Ошибка загрузки дашборда</p>';
+            console.error(e);
+        }
+    }
+
+    function getGreeting() {
+        const h = new Date().getHours();
+        if (h < 6) return 'Доброй ночи';
+        if (h < 12) return 'Доброе утро';
+        if (h < 18) return 'Добрый день';
+        return 'Добрый вечер';
+    }
+
+    loadDashboard();
+</script>
+{% endblock %}

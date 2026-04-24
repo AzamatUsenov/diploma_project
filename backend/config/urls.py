@@ -7,7 +7,8 @@ from .frontend_views import (
     IndexView, JobsListView, JobDetailView, JobCreateView,
     CompareView, TestsListView,
     LoginView, RegisterView, ProfileView, PublicProfileView,
-    ApplicationsView, FavoritesView,
+    ApplicationsView, FavoritesView, AboutView, DashboardView,
+    ChatView,
 )
 
 admin.site.site_header = 'JobPlatform — Администрирование'
@@ -43,6 +44,9 @@ urlpatterns = [
     path('profile/<int:pk>/', PublicProfileView.as_view(), name='public_profile'),
     path('applications/', ApplicationsView.as_view(), name='applications'),
     path('favorites/', FavoritesView.as_view(), name='favorites'),
+    path('about/', AboutView.as_view(), name='about'),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
+    path('applications/<int:pk>/chat/', ChatView.as_view(), name='chat'),
 ]
 
 if settings.DEBUG:

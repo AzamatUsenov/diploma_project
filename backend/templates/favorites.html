@@ -3,12 +3,15 @@
 
 {% block content %}
 <div class="flex items-center gap-3 mb-6">
-    <div class="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
+    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-50 to-danger-50 flex items-center justify-center ring-1 ring-pink-100">
         <svg class="w-5 h-5 text-danger-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
     </div>
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Избранное</h1>
-        <p class="text-sm text-gray-500">Сохранённые вакансии</p>
+        <p class="text-sm text-gray-500">Сохранённые вакансии для быстрого доступа</p>
+    </div>
+    <div class="ml-auto">
+        <span id="fav-count" class="text-sm text-gray-400 font-medium"></span>
     </div>
 </div>
 <div id="favorites-content" class="space-y-3">
@@ -26,30 +29,40 @@
         try {
             const data = await api('/analytics/favorites/');
             const container = document.getElementById('favorites-content');
+            const countEl = document.getElementById('fav-count');
 
             if (!data.results || data.results.length === 0) {
+                countEl.textContent = '';
                 container.innerHTML = `
-                    <div class="card p-12 text-center">
-                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                    <div class="card-static p-14 text-center">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-pink-50 to-danger-50 flex items-center justify-center mx-auto mb-5">
+                            <svg class="w-10 h-10 text-danger-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                         </div>
-                        <p class="text-gray-500 font-medium mb-2">В избранном пока пусто</p>
-                        <p class="text-gray-400 text-sm mb-4">Сохраняйте вакансии для быстрого доступа</p>
-                        <a href="/jobs/" class="btn-primary inline-block !text-sm">Смотреть вакансии</a>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">В избранном пока пусто</h3>
+                        <p class="text-gray-500 text-sm mb-6 max-w-sm mx-auto">Нажмите "В избранное" на странице вакансии, чтобы сохранить её для быстрого доступа</p>
+                        <a href="/jobs/" class="btn-primary">Смотреть вакансии</a>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = data.results.map(fav => `
-                <div class="card p-5 flex justify-between items-center slide-up">
+            countEl.textContent = `${data.results.length} вакансий`;
+
+            container.innerHTML = data.results.map((fav, i) => `
+                <div class="card p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 slide-up" style="animation-delay:${i * 0.04}s">
                     <div class="flex-1 min-w-0">
-                        <a href="/jobs/${fav.job}/" class="font-semibold text-gray-900 hover:text-primary-600 transition text-lg">${fav.job_title}</a>
-                        <div class="text-sm text-gray-500 mt-0.5">${fav.job_company}</div>
-                        <div class="text-xs text-gray-400 mt-1">Добавлено ${timeAgo(fav.created_at)}</div>
+                        <a href="/jobs/${fav.job}/" class="font-semibold text-gray-900 hover:text-primary-600 transition text-lg block truncate">${fav.job_title}</a>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                            <span class="font-medium text-gray-600">${fav.job_company}</span>
+                            <span class="text-gray-300">&middot;</span>
+                            <span class="text-xs text-gray-400">Добавлено ${timeAgo(fav.created_at)}</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 ml-4">
-                        <a href="/jobs/${fav.job}/" class="btn-ghost !text-xs">Открыть</a>
-                        <button onclick="removeFavorite(${fav.id})" class="text-gray-400 hover:text-danger-500 p-2 rounded-lg hover:bg-danger-50 transition" title="Удалить">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="/jobs/${fav.job}/" class="btn-ghost !text-xs !px-3 !py-1.5 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Открыть
+                        </a>
+                        <button onclick="removeFavorite(${fav.id})" class="text-gray-400 hover:text-danger-500 p-2 rounded-lg hover:bg-danger-50 transition" title="Удалить из избранного">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>

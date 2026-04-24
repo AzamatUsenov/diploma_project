@@ -47,3 +47,15 @@ class ApplicationsView(TemplateView):
 
 class FavoritesView(TemplateView):
     template_name = 'favorites.html'
+
+
+class AboutView(TemplateView):
+    template_name = 'about.html'
+
+
+class DashboardView(TemplateView):
+    template_name = 'dashboard.html'
+
+
+class ChatView(TemplateView):
+    template_name = 'chat.html'

@@ -13,8 +13,8 @@ class Job(models.Model):
     description = models.TextField()
     company = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
-    salary_min = models.IntegerField(null=True, blank=True, help_text='Min salary in KZT')
-    salary_max = models.IntegerField(null=True, blank=True, help_text='Max salary in KZT')
+    salary_min = models.IntegerField(null=True, blank=True, help_text='Min salary in UZS')
+    salary_max = models.IntegerField(null=True, blank=True, help_text='Max salary in UZS')
 
     # Level and requirements
     level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='junior')

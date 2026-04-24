@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer, RegisterSerializer
 from .permissions import IsOwnerOrReadOnly
@@ -65,6 +68,14 @@ class RegisterView(APIView):
                 'refresh': str(refresh),
             },
         }, status=status.HTTP_201_CREATED)
+
+
+class GetCSRFTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        return Response({'detail': 'CSRF cookie set', 'csrfToken': get_token(request)})
 
 
 class LoginView(APIView):
