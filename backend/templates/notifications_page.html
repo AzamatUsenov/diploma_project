@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Уведомления — JobPlatform{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6 slide-up">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 flex items-center justify-center ring-1 ring-primary-200 dark:ring-primary-700">
+                <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Уведомления</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Будьте в курсе всех событий</p>
+            </div>
+        </div>
+        <button onclick="markAllRead()" class="btn-ghost !text-xs" id="mark-all-btn">
+            Прочитать все
+        </button>
+    </div>
+
+    <div id="notifications-list" class="space-y-2">
+        <div class="flex justify-center py-12">
+            <div class="w-8 h-8 border-3 border-primary-200 dark:border-primary-700 border-t-primary-600 dark:border-t-primary-400 rounded-full animate-spin"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (!isLoggedIn()) { window.location = '/login/'; }
+
+    const notifIcons = {
+        'application_status': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+        'new_message': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
+        'job_recommendation': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
+        'test_result': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>',
+    };
+
+    const notifColors = {
+        'application_status': 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+        'new_message': 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400',
+        'job_recommendation': 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+        'test_result': 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+    };
+
+    async function loadNotifications() {
+        try {
+            const data = await api('/notifications/?page_size=50');
+            const container = document.getElementById('notifications-list');
+            const notifications = data.results || data;
+
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="card-static p-14 text-center">
+                        <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-5">
+                            <svg class="w-10 h-10 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Пока нет уведомлений</h3>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Здесь будут появляться важные события</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = notifications.map((notif, i) => {
+                const icon = notifIcons[notif.notification_type] || notifIcons['application_status'];
+                const color = notifColors[notif.notification_type] || notifColors['application_status'];
+                const unreadClass = notif.is_read ? '' : 'ring-2 ring-primary-200 dark:ring-primary-700 bg-primary-50/30 dark:bg-primary-900/10';
+
+                return `
+                <div class="card p-4 ${unreadClass} slide-up hover:shadow-lg transition-all cursor-pointer" style="animation-delay:${i * 0.03}s" onclick="handleNotificationClick(${notif.id}, '${notif.link}', ${notif.is_read})">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0">
+                            ${icon}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm">${notif.title}</h3>
+                                ${!notif.is_read ? '<span class="w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-400 shrink-0"></span>' : ''}
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${notif.message}</p>
+                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">${notif.time_ago}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch(e) {
+            console.error('Load notifications error:', e);
+            document.getElementById('notifications-list').innerHTML = '<p class="text-danger-500 dark:text-danger-400 text-center py-8">Ошибка загрузки</p>';
+        }
+    }
+
+    async function handleNotificationClick(notifId, link, isRead) {
+        if (!isRead) {
+            try {
+                await api(`/notifications/${notifId}/mark_read/`, { method: 'POST' });
+            } catch(e) {
+                console.error('Mark read error:', e);
+            }
+        }
+
+        if (link) {
+            window.location.href = link;
+        }
+    }
+
+    async function markAllRead() {
+        try {
+            await api('/notifications/mark_all_read/', { method: 'POST' });
+            toast('Все уведомления прочитаны');
+            loadNotifications();
+        } catch(e) {
+            toast('Ошибка', 'error');
+        }
+    }
+
+    loadNotifications();
+</script>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from jobs.models import Job
+from model_utils import FieldTracker
 
 
 class Application(models.Model):
@@ -18,6 +19,9 @@ class Application(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Track field changes for notifications
+    tracker = FieldTracker(fields=['status'])
 
     class Meta:
         ordering = ['-created_at']

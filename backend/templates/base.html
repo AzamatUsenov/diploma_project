@@ -104,6 +104,13 @@
                         <svg id="theme-icon-light" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                         <svg id="theme-icon-dark" class="w-5 h-5 text-gray-600 dark:text-gray-400 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                     </button>
+                    <!-- Notifications bell (only for logged in users) -->
+                    <div id="nav-notifications" class="hidden relative">
+                        <a href="/notifications/" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all relative" title="Уведомления">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-danger-500 text-white text-xs font-bold rounded-full flex items-center justify-center"></span>
+                        </a>
+                    </div>
                     <div id="nav-guest" class="hidden items-center gap-2">
                         <a href="/login/" class="nav-link hidden sm:block">Войти</a>
                         <a href="/register/" class="btn-primary text-sm !py-2 !px-4">Регистрация</a>
@@ -144,6 +151,7 @@
                     <a href="/dashboard/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-dashboard">Дашборд</a>
                     <a href="/applications/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-apps">Заявки</a>
                     <a href="/favorites/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-favs">Избранное</a>
+                    <a href="/notifications/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-notifications">Уведомления</a>
                     <a href="/profile/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-profile">Профиль</a>
                 </div>
                 <div id="mobile-menu-guest" class="pt-2 mt-2 border-t border-gray-100 dark:border-gray-700 space-y-1">
@@ -356,6 +364,7 @@
             const user = document.getElementById('nav-user');
             const mobileAuth = document.getElementById('mobile-menu-auth');
             const mobileGuest = document.getElementById('mobile-menu-guest');
+            const navNotifications = document.getElementById('nav-notifications');
 
             if (profile && isLoggedIn()) {
                 guest.classList.add('hidden');
@@ -363,6 +372,7 @@
                 user.classList.add('flex');
                 mobileAuth.classList.remove('hidden');
                 mobileGuest.classList.add('hidden');
+                navNotifications.classList.remove('hidden');
                 document.getElementById('nav-username').textContent = profile.user.username;
                 document.getElementById('nav-avatar').textContent = profile.user.username[0].toUpperCase();
                 const badge = document.getElementById('nav-role-badge');
@@ -373,12 +383,15 @@
                 const createJobLink = document.getElementById('nav-create-job');
                 if (profile.role === 'hr') createJobLink.classList.remove('hidden');
                 else createJobLink.classList.add('hidden');
+
+                updateNotificationBadge();
             } else {
                 guest.classList.remove('hidden');
                 guest.classList.add('flex');
                 user.classList.add('hidden');
                 mobileAuth.classList.add('hidden');
                 mobileGuest.classList.remove('hidden');
+                navNotifications.classList.add('hidden');
             }
 
             highlightActiveNav();
@@ -466,6 +479,28 @@
 
         function loader() {
             return `<div class="flex justify-center py-12"><div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div></div>`;
+        }
+
+        // Notification badge update
+        async function updateNotificationBadge() {
+            if (!isLoggedIn()) return;
+            try {
+                const data = await api('/notifications/unread_count/');
+                const badge = document.getElementById('notif-badge');
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            } catch(e) {
+                console.error('Failed to load notification count:', e);
+            }
+        }
+
+        // Poll notifications every 60 seconds
+        if (isLoggedIn()) {
+            setInterval(updateNotificationBadge, 60000);
         }
 
         // Scroll to top button

@@ -59,3 +59,7 @@ class DashboardView(TemplateView):
 
 class ChatView(TemplateView):
     template_name = 'chat.html'
+
+
+class NotificationsView(TemplateView):
+    template_name = 'notifications_page.html'

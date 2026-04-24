@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'applications',
     'tests_system',
     'analytics',
+    'notifications',
 ]
 
 MIDDLEWARE = [
