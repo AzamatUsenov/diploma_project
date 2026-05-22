@@ -1,8 +1,11 @@
+import io
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes as perm_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from drf_spectacular.utils import extend_schema
 from jobs.models import Job
 from accounts.models import UserProfile
@@ -115,3 +118,67 @@ def compare_view(request):
     user_profile = request.user.profile
     result = compare_jobs(jobs, user_profile)
     return Response(result)
+
+
+@api_view(['GET'])
+@perm_classes([IsAuthenticated])
+def export_job_pdf(request, job_id):
+    from applications.models import Application
+    from tests_system.models import TestResult
+
+    user = request.user
+    if not hasattr(user, 'profile') or user.profile.role != 'hr':
+        return Response({'detail': 'HR only'}, status=status.HTTP_403_FORBIDDEN)
+
+    job = get_object_or_404(Job, pk=job_id, posted_by=user)
+    apps = Application.objects.filter(job=job).select_related(
+        'applicant', 'applicant__profile'
+    ).order_by('-created_at')
+
+    applicant_data = []
+    for app in apps:
+        profile = getattr(app.applicant, 'profile', None)
+        test_results = TestResult.objects.filter(
+            user=app.applicant, completed_at__isnull=False
+        ).select_related('test')
+        applicant_data.append({
+            'username': app.applicant.username,
+            'full_name': app.applicant.get_full_name() or app.applicant.username,
+            'email': app.applicant.email,
+            'status': app.get_status_display(),
+            'status_raw': app.status,
+            'cover_letter': app.cover_letter[:200] if app.cover_letter else '',
+            'skills': profile.skills if profile else [],
+            'level': profile.get_level_display() if profile else '',
+            'applied_at': app.created_at.strftime('%d.%m.%Y'),
+            'tests': [
+                {
+                    'title': tr.test.title,
+                    'score': tr.score,
+                    'max_score': tr.max_score,
+                    'status': tr.status,
+                }
+                for tr in test_results
+            ],
+        })
+
+    analysis = analyze_job(job)
+
+    html = render_to_string('analytics/job_report.html', {
+        'job': job,
+        'analysis': analysis,
+        'applicants': applicant_data,
+        'total': apps.count(),
+        'accepted': apps.filter(status='accepted').count(),
+        'rejected': apps.filter(status='rejected').count(),
+        'pending': apps.filter(status='pending').count(),
+    })
+
+    from xhtml2pdf import pisa
+    buffer = io.BytesIO()
+    pisa.CreatePDF(io.StringIO(html), dest=buffer, encoding='utf-8')
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="report_{job.id}.pdf"'
+    return response

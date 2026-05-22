@@ -12,7 +12,7 @@ from .recommendation_engine import calculate_match, generate_recommendation
 from .comparison import compare_jobs
 
 
-# ─── Unit tests: requirement_parser ───
+# --- Unit tests: requirement_parser ---
 
 
 class ParseSkillsTest(TestCase):
@@ -52,7 +52,6 @@ class ParseSkillsTest(TestCase):
         self.assertIn('Design Patterns', skills)
 
     def test_short_aliases_word_boundary(self):
-        """Short aliases like 'go' should not match 'going' or 'algorithm'."""
         text = 'going forward with the algorithm'
         skills = parse_skills(text)
         self.assertNotIn('Go', skills)
@@ -75,7 +74,6 @@ class ExtractExperienceTest(TestCase):
         self.assertEqual(extract_experience_years('не менее 2 лет'), 2)
 
     def test_range_pattern(self):
-        # Range pattern captures the larger number due to regex ordering
         result = extract_experience_years('3-5 years')
         self.assertIn(result, (3, 5))
 
@@ -87,7 +85,7 @@ class ExtractExperienceTest(TestCase):
         self.assertEqual(extract_experience_years(None), 0)
 
 
-# ─── Unit tests: skill_classifier ───
+# --- Unit tests: skill_classifier ---
 
 
 class SkillClassifierTest(TestCase):
@@ -136,7 +134,7 @@ class SkillClassifierTest(TestCase):
         self.assertEqual(detect_level_from_skills([], 0), 'junior')
 
 
-# ─── Unit tests: job_analyzer ───
+# --- Unit tests: job_analyzer ---
 
 
 class JobAnalyzerTest(APITestCase):
@@ -183,7 +181,6 @@ class JobAnalyzerTest(APITestCase):
         self.assertGreaterEqual(result['honesty_score'], 50)
 
     def test_analysis_saves_to_job(self):
-        """analyze_job_view endpoint saves results to the Job model."""
         job = Job.objects.create(
             title='Mid Dev', company='Corp',
             description='d', posted_by=self.user,
@@ -197,7 +194,7 @@ class JobAnalyzerTest(APITestCase):
         self.assertNotEqual(job.detected_level, '')
 
 
-# ─── Unit tests: recommendation_engine ───
+# --- Unit tests: recommendation_engine ---
 
 
 class RecommendationTest(APITestCase):
@@ -242,13 +239,13 @@ class RecommendationTest(APITestCase):
         self.assertEqual(result['missing_skills'], ['React', 'Vue'])
 
     def test_match_api_endpoint(self):
+        self.client.force_authenticate(user=self.user)
         job = Job.objects.create(
             title='Test', company='Corp', description='d',
             requirements_text='Python, Django', level='junior',
             posted_by=self.hr, tech_stack=[],
         )
         response = self.client.post('/api/analytics/match/', {
-            'user_id': self.user.id,
             'job_id': job.id,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -256,7 +253,7 @@ class RecommendationTest(APITestCase):
         self.assertIn('recommendation', response.data)
 
 
-# ─── Unit tests: comparison ───
+# --- Unit tests: comparison ---
 
 
 class ComparisonTest(APITestCase):
@@ -300,22 +297,16 @@ class ComparisonTest(APITestCase):
         self.assertIn('error', result)
 
     def test_compare_api_endpoint(self):
+        self.client.force_authenticate(user=self.user)
         response = self.client.post('/api/analytics/compare/', {
             'job_ids': [self.job1.id, self.job2.id],
-            'user_id': self.user.id,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['jobs']), 2)
         self.assertIn('verdict', response.data)
 
-    def test_compare_api_without_user(self):
-        response = self.client.post('/api/analytics/compare/', {
-            'job_ids': [self.job1.id, self.job2.id],
-        }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-
-# ─── Favorites API ───
+# --- Favorites API ---
 
 
 class FavoriteAPITest(APITestCase):
@@ -327,10 +318,10 @@ class FavoriteAPITest(APITestCase):
             title='Test Job', company='Corp', description='d',
             requirements_text='r', posted_by=self.hr,
         )
+        self.client.force_authenticate(user=self.user)
 
     def test_add_favorite(self):
         response = self.client.post('/api/analytics/favorites/', {
-            'user_id': self.user.id,
             'job_id': self.job.id,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -339,15 +330,14 @@ class FavoriteAPITest(APITestCase):
     def test_add_duplicate_favorite(self):
         Favorite.objects.create(user=self.user, job=self.job)
         response = self.client.post('/api/analytics/favorites/', {
-            'user_id': self.user.id,
             'job_id': self.job.id,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Favorite.objects.count(), 1)  # no duplicate
+        self.assertEqual(Favorite.objects.count(), 1)
 
-    def test_list_favorites_filtered(self):
+    def test_list_favorites(self):
         Favorite.objects.create(user=self.user, job=self.job)
-        response = self.client.get(f'/api/analytics/favorites/?user_id={self.user.id}')
+        response = self.client.get('/api/analytics/favorites/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 

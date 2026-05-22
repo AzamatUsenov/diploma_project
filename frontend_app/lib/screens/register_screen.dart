@@ -64,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 24),
 
             // Role
-            Text('Кто вы?', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+            Text('Кто вы?', style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -102,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 20),
 
             if (_role == 'applicant') ...[
-              Text('Ваш уровень', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+              Text('Ваш уровень', style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -142,6 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _roleCard(String value, String label, IconData icon, MaterialColor color) {
     final selected = _role == value;
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _role = value),
@@ -149,15 +150,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: selected ? color.withAlpha(25) : Colors.grey.shade50,
+            color: selected ? color.withAlpha(25) : cs.surfaceContainerHighest.withAlpha(80),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: selected ? color : Colors.grey.shade300, width: selected ? 2 : 1),
+            border: Border.all(color: selected ? color : cs.outlineVariant, width: selected ? 2 : 1),
           ),
           child: Column(
             children: [
-              Icon(icon, color: selected ? color.shade700 : Colors.grey, size: 32),
+              Icon(icon, color: selected ? color.shade700 : Theme.of(context).hintColor, size: 32),
               const SizedBox(height: 8),
-              Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: selected ? color.shade700 : Colors.grey.shade600)),
+              Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: selected ? color.shade700 : Theme.of(context).hintColor)),
             ],
           ),
         ),
@@ -175,15 +176,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? cs.primaryContainer : Colors.grey.shade50,
+            color: selected ? cs.primaryContainer : cs.surfaceContainerHighest.withAlpha(80),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? cs.primary : Colors.grey.shade300, width: selected ? 2 : 1),
+            border: Border.all(color: selected ? cs.primary : cs.outlineVariant, width: selected ? 2 : 1),
           ),
           child: Column(
             children: [
               Text(emoji, style: const TextStyle(fontSize: 20)),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: selected ? cs.primary : Colors.grey.shade600)),
+              Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: selected ? cs.primary : Theme.of(context).hintColor)),
             ],
           ),
         ),

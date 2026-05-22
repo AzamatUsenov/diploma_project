@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/common.dart';
+import 'reviews_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
@@ -64,6 +65,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     children: [
                       _headerCard(),
                       const SizedBox(height: 12),
+                      _companyReviewsButton(),
+                      const SizedBox(height: 12),
                       if (_analysis != null) _analysisCard(),
                       if (_match != null) ...[
                         const SizedBox(height: 12),
@@ -90,20 +93,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: Text(j['title'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
+                Expanded(
+                  child: Hero(
+                    tag: 'job_title_${widget.jobId}',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(j['title'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ),
                 LevelBadge(j['level']),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.business, size: 16, color: Colors.grey),
+                Icon(Icons.business, size: 16, color: Theme.of(context).hintColor),
                 const SizedBox(width: 6),
                 Text(j['company'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 const SizedBox(width: 16),
-                const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                Icon(Icons.location_on_outlined, size: 16, color: Theme.of(context).hintColor),
                 const SizedBox(width: 4),
-                Text(j['location'] ?? '', style: TextStyle(color: Colors.grey.shade600)),
+                Text(j['location'] ?? '', style: TextStyle(color: Theme.of(context).hintColor)),
               ],
             ),
             const SizedBox(height: 12),
@@ -111,7 +122,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               children: [
                 SalaryText(min: j['salary_min'], max: j['salary_max']),
                 const SizedBox(width: 16),
-                Text('${j['experience_years']} лет опыта', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                Text('${j['experience_years']} лет опыта', style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13)),
                 if (j['is_remote'] == true) ...[
                   const SizedBox(width: 12),
                   const SkillChip('Remote', color: Colors.indigo),
@@ -214,7 +225,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600), textAlign: TextAlign.center),
+            Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).hintColor), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -255,7 +266,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: CircularProgressIndicator(
                       value: score / 100,
                       strokeWidth: 8,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       color: scoreColor,
                     ),
                   ),
@@ -278,7 +289,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(m['recommendation'] ?? '', style: TextStyle(fontSize: 13, color: Colors.grey.shade600), textAlign: TextAlign.center),
+            Text(m['recommendation'] ?? '', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor), textAlign: TextAlign.center),
             const SizedBox(height: 16),
 
             // Skills
@@ -308,12 +319,45 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     CircleAvatar(radius: 12, backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                       child: Text('${e.key + 1}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(e.value, style: TextStyle(fontSize: 13, color: Colors.grey.shade700))),
+                    Expanded(child: Text(e.value, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(200)))),
                   ],
                 ),
               )),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _companyReviewsButton() {
+    final company = _job!['company'] ?? '';
+    return Card(
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ReviewsScreen(companyName: company)),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.rate_review, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Отзывы о компании', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text('Посмотреть отзывы сотрудников о $company', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
         ),
       ),
     );
@@ -328,11 +372,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             const Text('Описание', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            Text(_job!['description'] ?? '', style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
+            Text(_job!['description'] ?? '', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(200), height: 1.5)),
             const SizedBox(height: 16),
             const Text('Требования', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Text(_job!['requirements_text'] ?? '', style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
+            Text(_job!['requirements_text'] ?? '', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(200), height: 1.5)),
           ],
         ),
       ),
@@ -343,7 +387,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, -2))],
       ),
       child: Row(
@@ -394,7 +438,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             const Text('Откликнуться', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('${_job!['title']} — ${_job!['company']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+            Text('${_job!['title']} — ${_job!['company']}', style: TextStyle(color: Theme.of(context).hintColor, fontSize: 14)),
             const SizedBox(height: 16),
             TextField(
               controller: letterCtrl,
@@ -406,7 +450,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               maxLines: 4,
             ),
             const SizedBox(height: 6),
-            Text('Необязательно, но повышает шансы', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+            Text('Необязательно, но повышает шансы', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

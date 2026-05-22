@@ -113,7 +113,7 @@ class _HrStatsScreenState extends State<HrStatsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
-                    Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    Text(label, style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor)),
                   ],
                 ),
               ),
@@ -173,14 +173,14 @@ class _HrStatsScreenState extends State<HrStatsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+              Text(label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
               Text('$count', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
             ],
           ),
           const SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: pct, minHeight: 8, backgroundColor: Colors.grey.shade100, color: color),
+            child: LinearProgressIndicator(value: pct, minHeight: 8, backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, color: color),
           ),
         ],
       ),
@@ -197,7 +197,7 @@ class _HrStatsScreenState extends State<HrStatsScreen> {
       child: Column(
         children: [
           Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
         ],
       ),
     );
@@ -232,7 +232,7 @@ class _HrStatsScreenState extends State<HrStatsScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -263,7 +263,7 @@ class _HrStatsScreenState extends State<HrStatsScreen> {
       child: Column(
         children: [
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+          Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).hintColor)),
         ],
       ),
     );

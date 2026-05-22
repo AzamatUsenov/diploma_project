@@ -67,6 +67,7 @@ class UserProfileAPITest(APITestCase):
             user=self.user, role='applicant', level='junior',
             skills=['Python', 'Django'],
         )
+        self.client.force_authenticate(user=self.user)
 
     def test_list_profiles(self):
         response = self.client.get('/api/accounts/profiles/')
@@ -95,6 +96,21 @@ class UserProfileAPITest(APITestCase):
     def test_get_nonexistent_profile(self):
         response = self.client.get('/api/accounts/profiles/999/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_me_endpoint(self):
+        response = self.client.get('/api/accounts/profiles/me/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user']['username'], 'testuser')
+
+    def test_me_patch(self):
+        response = self.client.patch(
+            '/api/accounts/profiles/me/',
+            {'bio': 'Updated bio'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.bio, 'Updated bio')
 
 
 class UserProfileModelTest(APITestCase):

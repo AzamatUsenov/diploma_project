@@ -104,11 +104,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                              Icon(Icons.chat_bubble_outline, size: 64, color: Theme.of(context).hintColor.withAlpha(100)),
                               const SizedBox(height: 16),
-                              Text('Нет сообщений', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+                              Text('Нет сообщений', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
                               const SizedBox(height: 8),
-                              Text('Начните диалог!', style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
+                              Text('Начните диалог!', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor.withAlpha(150))),
                             ],
                           ),
                         ),
@@ -132,6 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = msg['text'] ?? '';
     final time = msg['created_at'] ?? '';
     final timeStr = time.length >= 16 ? time.substring(11, 16) : '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -142,7 +143,7 @@ class _ChatScreenState extends State<ChatScreen> {
         decoration: BoxDecoration(
           color: isMe
               ? Theme.of(context).colorScheme.primary
-              : Colors.grey.shade100,
+              : isDark ? Colors.grey.shade800 : Colors.grey.shade100,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -158,12 +159,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '${msg['sender_username']} · ${role == 'hr' ? 'HR' : 'Соискатель'}',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.grey.shade600),
                 ),
               ),
-            Text(text, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : Colors.black87)),
+            Text(text, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface)),
             const SizedBox(height: 4),
-            Text(timeStr, style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : Colors.grey.shade400)),
+            Text(timeStr, style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : Theme.of(context).hintColor)),
           ],
         ),
       ),
@@ -171,10 +172,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _inputBar(ColorScheme cs) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.fromLTRB(16, 8, 8, 8 + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8, offset: const Offset(0, -2))],
       ),
       child: Row(
@@ -185,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: InputDecoration(
                 hintText: 'Сообщение...',
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),

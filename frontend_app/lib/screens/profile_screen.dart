@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
+import '../services/theme_service.dart';
 import '../widgets/common.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -68,6 +72,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 16),
                         _skillsCard(),
                         const SizedBox(height: 16),
+                        if ((_profile!['role'] ?? '') == 'applicant') ...[
+                          _resumeCard(),
+                          const SizedBox(height: 16),
+                        ],
                         _actionsCard(),
                       ],
                     ),
@@ -98,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 12),
             Text(username, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+            Text(email, style: TextStyle(fontSize: 14, color: Theme.of(context).hintColor)),
             const SizedBox(height: 8),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -168,13 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(item.$1, size: 18, color: Colors.grey.shade500),
+                  Icon(item.$1, size: 18, color: Theme.of(context).hintColor),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.$2, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                        Text(item.$2, style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor)),
                         Text(item.$3, style: const TextStyle(fontSize: 14)),
                       ],
                     ),
@@ -211,7 +219,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _resumeCard() {
+    final resume = _profile!['resume'];
+    final hasResume = resume != null && (resume as String).isNotEmpty;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Резюме', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            if (hasResume) ...[
+              Row(
+                children: [
+                  Icon(Icons.description, size: 18, color: Theme.of(context).hintColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _openResume(resume),
+                      child: Text(
+                        Uri.parse(resume).pathSegments.last,
+                        style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    onPressed: _deleteResume,
+                  ),
+                ],
+              ),
+            ] else ...[
+              Text('Резюме не загружено', style: TextStyle(fontSize: 14, color: Theme.of(context).hintColor)),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _uploadResume,
+                icon: const Icon(Icons.upload_file, size: 18),
+                label: Text(hasResume ? 'Заменить резюме' : 'Загрузить резюме'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadResume() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    try {
+      await ApiService.uploadResume(File(result.files.single.path!));
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Резюме загружено')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ошибка загрузки резюме')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteResume() async {
+    try {
+      await ApiService.delete('/accounts/profiles/delete-resume/');
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Резюме удалено')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ошибка удаления')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openResume(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Widget _actionsCard() {
+    final themeService = ThemeService();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -226,6 +334,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Редактировать профиль', style: TextStyle(fontSize: 14)),
               trailing: const Icon(Icons.chevron_right, size: 20),
               onTap: _editProfile,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(themeService.isDark ? Icons.light_mode : Icons.dark_mode),
+              title: const Text('Тёмная тема', style: TextStyle(fontSize: 14)),
+              trailing: Switch(
+                value: themeService.isDark,
+                onChanged: (_) => themeService.toggle(),
+              ),
             ),
             const Divider(height: 1),
             ListTile(

@@ -24,6 +24,7 @@ class UserProfile(models.Model):
     # For applicant
     portfolio_url = models.URLField(blank=True, default='')
     github_url = models.URLField(blank=True, default='')
+    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
 
     # For HR
     company_name = models.CharField(max_length=255, blank=True, default='')

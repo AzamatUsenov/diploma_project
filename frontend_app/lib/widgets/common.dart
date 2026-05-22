@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 class LevelBadge extends StatelessWidget {
@@ -42,7 +43,7 @@ class HonestyIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: score / 100,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               color: color,
               minHeight: 4,
             ),
@@ -90,12 +91,12 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey.shade300),
+            Icon(icon, size: 64, color: Theme.of(context).hintColor.withAlpha(100)),
             const SizedBox(height: 16),
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
-              Text(subtitle!, style: TextStyle(fontSize: 13, color: Colors.grey.shade500), textAlign: TextAlign.center),
+              Text(subtitle!, style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor.withAlpha(150)), textAlign: TextAlign.center),
             ],
           ],
         ),
@@ -122,3 +123,145 @@ class SkillChip extends StatelessWidget {
     );
   }
 }
+
+class ShimmerLoading extends StatefulWidget {
+  final int itemCount;
+  final Widget Function(BuildContext context, int index) itemBuilder;
+
+  const ShimmerLoading({
+    super.key,
+    this.itemCount = 5,
+    required this.itemBuilder,
+  });
+
+  factory ShimmerLoading.jobCards() => ShimmerLoading(itemBuilder: (ctx, _) => const _ShimmerJobCard());
+  factory ShimmerLoading.simpleCards() => ShimmerLoading(itemBuilder: (ctx, _) => const _ShimmerSimpleCard());
+
+  @override
+  State<ShimmerLoading> createState() => _ShimmerLoadingState();
+}
+
+class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      listenable: _ctrl,
+      builder: (ctx, _) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: widget.itemCount,
+        itemBuilder: (ctx, i) => _ShimmerWrapper(
+          progress: _ctrl.value,
+          child: widget.itemBuilder(ctx, i),
+        ),
+      ),
+    );
+  }
+}
+
+class AnimatedBuilder extends AnimatedWidget {
+  final Widget Function(BuildContext context, Widget? child) builder;
+  const AnimatedBuilder({super.key, required super.listenable, required this.builder});
+  Animation<double> get animation => listenable as Animation<double>;
+  @override
+  Widget build(BuildContext context) => builder(context, null);
+}
+
+class _ShimmerWrapper extends StatelessWidget {
+  final double progress;
+  final Widget child;
+  const _ShimmerWrapper({required this.progress, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    final highlightColor = isDark ? Colors.grey.shade700 : Colors.grey.shade100;
+
+    return ShaderMask(
+      shaderCallback: (bounds) {
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [baseColor, highlightColor, baseColor],
+          stops: [max(0, progress - 0.3), progress, min(1, progress + 0.3)],
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.srcATop,
+      child: child,
+    );
+  }
+}
+
+class _ShimmerJobCard extends StatelessWidget {
+  const _ShimmerJobCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              _box(180, 16), const Spacer(), _box(55, 22, radius: 8),
+            ]),
+            const SizedBox(height: 10),
+            Row(children: [_box(100, 12), const SizedBox(width: 16), _box(80, 12)]),
+            const SizedBox(height: 12),
+            Row(children: [_box(70, 14), const SizedBox(width: 16), _box(40, 14), const SizedBox(width: 16), _box(50, 14)]),
+            const SizedBox(height: 12),
+            Row(children: [_box(50, 24, radius: 8), const SizedBox(width: 6), _box(60, 24, radius: 8), const SizedBox(width: 6), _box(45, 24, radius: 8)]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShimmerSimpleCard extends StatelessWidget {
+  const _ShimmerSimpleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _box(48, 48, radius: 12),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [_box(160, 14), const SizedBox(height: 8), _box(90, 12)],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _box(double w, double h, {double radius = 4}) => Container(
+  width: w, height: h,
+  decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(radius)),
+);

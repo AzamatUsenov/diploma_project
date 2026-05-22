@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'http://10.0.2.2:8000/api';
 
   static Future<String?> _getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -120,6 +121,20 @@ class ApiService {
 
   static Future<Map<String, dynamic>> delete(String path) =>
       request('DELETE', path);
+
+  static Future<Map<String, dynamic>> uploadResume(File file) async {
+    final token = await _getAccessToken();
+    final uri = Uri.parse('$baseUrl/accounts/profiles/upload-resume/');
+    final req = http.MultipartRequest('POST', uri);
+    if (token != null) req.headers['Authorization'] = 'Bearer $token';
+    req.files.add(await http.MultipartFile.fromPath('resume', file.path));
+    final streamed = await req.send();
+    final res = await http.Response.fromStream(streamed);
+    if (res.statusCode == 401) throw ApiException(401, 'Сессия истекла');
+    final data = res.body.isNotEmpty ? jsonDecode(utf8.decode(res.bodyBytes)) : {};
+    if (res.statusCode >= 400) throw ApiException(res.statusCode, data is Map ? data : {'detail': 'Ошибка'});
+    return data is Map<String, dynamic> ? data : {'data': data};
+  }
 
   // Auth
   static Future<Map<String, dynamic>> login(String username, String password) async {

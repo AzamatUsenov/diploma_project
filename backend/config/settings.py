@@ -8,7 +8,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-test-key-do-not-use-i
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     'applications',
     'tests_system',
     'analytics',
+    'notifications',
+    'reviews',
 ]
 
 MIDDLEWARE = [
@@ -131,6 +133,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'applications', 'description': 'Отклики на вакансии'},
         {'name': 'tests', 'description': 'Тесты навыков и результаты'},
         {'name': 'analytics', 'description': 'Анализ, матчинг, сравнение, избранное'},
+        {'name': 'reviews', 'description': 'Отзывы о компаниях'},
     ],
     'ENUM_NAME_OVERRIDES': {
         'JobLevelEnum': [('junior', 'Junior'), ('mid', 'Mid'), ('senior', 'Senior')],
@@ -142,7 +145,10 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://10.0.2.2:3000",
 ]
+
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 CORS_ALLOW_CREDENTIALS = True
 

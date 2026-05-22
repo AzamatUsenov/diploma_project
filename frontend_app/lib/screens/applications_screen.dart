@@ -79,7 +79,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? ShimmerLoading.jobCards()
           : _applications.isEmpty
               ? const EmptyState(
                   icon: Icons.inbox_outlined,
@@ -104,6 +104,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     final color = _statusColor(status);
     final createdAt = app['created_at'] ?? '';
     final appId = app['id'];
+    final hintColor = Theme.of(context).hintColor;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -137,16 +138,16 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.business, size: 14, color: Colors.grey.shade500),
+                    Icon(Icons.business, size: 14, color: hintColor),
                     const SizedBox(width: 4),
-                    Text(jobCompany, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                    Text(jobCompany, style: TextStyle(fontSize: 13, color: hintColor)),
                   ],
                 ),
               ],
               if (app['cover_letter'] != null && (app['cover_letter'] as String).isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(app['cover_letter'],
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 13, color: hintColor),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
               ],
               const SizedBox(height: 8),
@@ -154,11 +155,11 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                 children: [
                   if (createdAt.isNotEmpty)
                     Text(createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+                        style: TextStyle(fontSize: 12, color: hintColor)),
                   const Spacer(),
-                  Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey.shade400),
+                  Icon(Icons.chat_bubble_outline, size: 16, color: hintColor),
                   const SizedBox(width: 4),
-                  Text('Чат', style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+                  Text('Чат', style: TextStyle(fontSize: 12, color: hintColor)),
                 ],
               ),
               if (_role == 'hr' && status == 'pending') ...[

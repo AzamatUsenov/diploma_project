@@ -39,7 +39,7 @@ class _TestsScreenState extends State<TestsScreen> {
         centerTitle: false,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? ShimmerLoading.simpleCards()
           : _tests.isEmpty
               ? const EmptyState(
                   icon: Icons.quiz_outlined,
@@ -96,13 +96,13 @@ class _TestsScreenState extends State<TestsScreen> {
                       children: [
                         LevelBadge(difficulty),
                         const SizedBox(width: 8),
-                        Text('$questionCount вопросов', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                        Text('$questionCount вопросов', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
                       ],
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right, color: Theme.of(context).hintColor),
             ],
           ),
         ),
@@ -129,7 +129,7 @@ class _TestTakingScreen extends StatefulWidget {
 
 class _TestTakingScreenState extends State<_TestTakingScreen> {
   List<dynamic> _questions = [];
-  Map<int, int> _answers = {};
+  Map<int, String> _answers = {};
   bool _loading = true;
   bool _submitting = false;
   Map<String, dynamic>? _result;
@@ -161,7 +161,7 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
     }
     setState(() => _submitting = true);
     try {
-      final answers = _answers.entries.map((e) => {'question_id': e.key, 'selected_option': e.value}).toList();
+      final answers = _answers.entries.map((e) => {'question_id': e.key, 'answer': e.value}).toList();
       final result = await ApiService.post('/tests/${widget.testId}/submit/', body: {'answers': answers});
       setState(() {
         _result = result;
@@ -191,8 +191,8 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
 
   Widget _resultView() {
     final score = _result!['score'] ?? 0;
-    final total = _result!['total'] ?? _questions.length;
-    final percentage = total > 0 ? (score / total * 100).round() : 0;
+    final maxScore = _result!['max_score'] ?? (_questions.length * 10);
+    final percentage = _result!['percentage'] ?? (maxScore > 0 ? (score / maxScore * 100).round() : 0);
     final color = percentage >= 70 ? Colors.green : percentage >= 40 ? Colors.orange : Colors.red;
 
     return Center(
@@ -210,7 +210,7 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
                   child: CircularProgressIndicator(
                     value: percentage / 100,
                     strokeWidth: 10,
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     color: color,
                   ),
                 ),
@@ -218,7 +218,7 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            Text('$score из $total правильных', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+            Text('$score из $maxScore баллов', style: TextStyle(fontSize: 16, color: Theme.of(context).hintColor)),
             const SizedBox(height: 8),
             Text(
               percentage >= 70 ? 'Отличный результат!' : percentage >= 40 ? 'Неплохо, но есть куда расти' : 'Стоит подучить материал',
@@ -280,8 +280,12 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
   }
 
   Widget _questionCard(int index, Map<String, dynamic> q) {
-    final options = List<Map<String, dynamic>>.from(q['options'] ?? []);
     final qId = q['id'] as int;
+    final options = <String, String>{};
+    if ((q['option_a'] ?? '').toString().isNotEmpty) options['a'] = q['option_a'];
+    if ((q['option_b'] ?? '').toString().isNotEmpty) options['b'] = q['option_b'];
+    if ((q['option_c'] ?? '').toString().isNotEmpty) options['c'] = q['option_c'];
+    if ((q['option_d'] ?? '').toString().isNotEmpty) options['d'] = q['option_d'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -292,33 +296,57 @@ class _TestTakingScreenState extends State<_TestTakingScreen> {
           children: [
             Text('${index + 1}. ${q['text'] ?? ''}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
-            ...options.asMap().entries.map((entry) {
-              final opt = entry.value;
-              final optId = opt['id'] as int;
-              final selected = _answers[qId] == optId;
+            ...options.entries.map((entry) {
+              final key = entry.key;
+              final text = entry.value;
+              final selected = _answers[qId] == key;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: InkWell(
-                  onTap: () => setState(() => _answers[qId] = optId),
+                  onTap: () => setState(() => _answers[qId] = key),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: selected ? Theme.of(context).colorScheme.primaryContainer : Colors.grey.shade50,
+                      color: selected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
+                        color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
                         width: selected ? 2 : 1,
                       ),
                     ),
-                    child: Text(
-                      opt['text'] ?? '',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: selected ? Theme.of(context).colorScheme.primary : Colors.grey.shade700,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                      ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+                          child: Center(
+                            child: Text(
+                              key.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).hintColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            text,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

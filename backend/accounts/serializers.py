@@ -16,7 +16,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'id', 'user', 'role', 'level', 'avatar', 'bio', 'skills',
-            'portfolio_url', 'github_url',
+            'portfolio_url', 'github_url', 'resume',
             'company_name', 'company_description',
             'created_at', 'updated_at',
         ]

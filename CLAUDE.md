@@ -1,185 +1,132 @@
-# CLAUDE.md — Job Platform (Дипломный проект)
+# CLAUDE.md — JobPlatform (Дипломный проект)
 
-Этот файл содержит инструкции для Claude Code при работе над дипломным проектом.
+Инструкции для Claude Code при работе над проектом.
 
-## 📋 Описание проекта
+## Описание проекта
 
-**Job Platform** — веб-приложение для поиска работы с фокусом на справедливые требования для джуниоров и стажировок.
+**JobPlatform** — платформа для поиска работы с фокусом на справедливые требования для Junior-разработчиков.
 
-- **Тип**: Django REST API + (будущий) фронтенд
-- **Цель**: Решить проблему завышенных требований на Junior вакансиях
-- **Целевая аудитория**: Компании и соискатели (особенно джуниоры)
+- **Backend**: Django 4.2 + DRF 3.14 (REST API, JWT-авторизация)
+- **Frontend**: Flutter 3.9+ (мобильное кроссплатформенное приложение)
+- **Database**: PostgreSQL 14+ (SQLite для dev)
 
-## 🏗️ Архитектура проекта
+## Архитектура
 
 ```
 diploma_project/
-├── backend/                    # Django приложение
-│   ├── accounts/               # Аутентификация, профили пользователей
-│   ├── applications/           # Заявки на вакансии
-│   ├── jobs/                   # Управление вакансиями (TODO)
-│   ├── reviews/                # Отзывы о компаниях (TODO)
-│   ├── manage.py               # Django CLI
-│   ├── requirements.txt         # Python зависимости
-│   └── settings.py             # Django конфиг
-├── docker-compose.yml          # Local dev environment
-├── Dockerfile                  # Production image
-├── IDEA.md                      # Описание идеи проекта
-├── PROJECT_INFO.md             # Спецификация требований
-└── README.md                    # Getting started
+├── backend/                     # Django REST API
+│   ├── accounts/                # Пользователи, профили, JWT-авторизация, резюме
+│   ├── jobs/                    # Вакансии, фильтрация, избранное
+│   ├── applications/            # Отклики, статусы, чат (сообщения)
+│   ├── tests_system/            # Тесты навыков, вопросы, результаты
+│   ├── analytics/               # Анализ вакансий, матчинг, сравнение, рекомендации
+│   ├── reviews/                 # Отзывы о компаниях
+│   ├── notifications/           # Уведомления (сигналы)
+│   ├── config/                  # settings, urls, management commands (seed_data)
+│   ├── templates/               # HTML-шаблоны веб-интерфейса
+│   ├── requirements.txt
+│   └── manage.py
+├── frontend_app/                # Flutter приложение
+│   ├── lib/
+│   │   ├── main.dart            # Точка входа, навигация, JWT-проверка
+│   │   ├── screens/             # 13 экранов
+│   │   ├── services/            # api_service.dart, theme_service.dart
+│   │   ├── widgets/             # common.dart (SkillChip, LevelBadge и др.)
+│   │   └── l10n/                # Локализация (русский)
+│   └── pubspec.yaml
+├── docker-compose.yml
+├── Dockerfile
+└── SETUP.md                     # Инструкция по установке и запуску
 ```
 
-## 🔧 Требования для разработки
+## Запуск
 
-### Перед началом
-1. Python 3.9+
-2. Django 4.x
-3. PostgreSQL (в Docker или локально)
-4. Virtual environment активирован
-
-### Установка зависимостей
 ```bash
+# Backend
 cd backend
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_data       # Тестовые данные
 python manage.py runserver
+
+# Frontend
+cd frontend_app
+flutter pub get
+flutter run
 ```
 
-### Docker
-```bash
-docker-compose up -d  # Запустить БД и кэш
-cd backend && python manage.py migrate
-python manage.py runserver
-```
-
-## 📝 Git Commit Rules
+## Git Commit Rules
 
 **ВАЖНО**: Создавайте отдельные коммиты для каждого файла (не бундлируйте).
 
-Примеры:
-- `git add accounts/models.py` → commit с описанием изменений models.py
-- `git add accounts/views.py` → отдельный commit
-- `git add accounts/tests.py` → отдельный commit
-
-Это делает историю чистой и облегчает revert/cherry-pick.
-
-## 🎯 Workflow разработки
-
-### 1. Планирование (Plan Mode)
-Используй `/plan` для сложных задач:
-- Архитектурные решения
-- Новые модули/приложения
-- Рефакторинг существующего кода
-
-### 2. Реализация
-- Начни с моделей (models.py)
-- Затем views/serializers
-- Добавь тесты параллельно
-- Коммить часто (минимум один в час)
-
-### 3. Тестирование
 ```bash
-python manage.py test                    # Все тесты
-python manage.py test accounts           # Тесты модуля
-coverage run --source='.' manage.py test
-coverage report
+git add accounts/models.py && git commit -m "..."
+git add accounts/views.py && git commit -m "..."
 ```
 
-### 4. Code Review
-- Перед PR запусти: `python manage.py check`
-- Проверь coverage в test_coverage.md
-- Используй `/code-review` для анализа PR
-
-## 💡 Django Best Practices (для этого проекта)
-
-### Модели
-- Используй abstract base models для общей функциональности
-- Всегда добавляй `created_at`, `updated_at` полями (с auto_now/auto_now_add)
-- Переопредели `__str__` для всех моделей
-
-### Views & Serializers
-- Используй ViewSets + Routers для CRUD
-- Добавляй permission classes для auth
-- Документируй API с docstrings
-
-### Тесты
-- Пиши тесты для каждого API endpoint
-- Используй TestCase с setUp/tearDown
-- Минимум 80% code coverage
-
-## 🔐 Безопасность
-
-- ❌ Не коммить `.env` файлы (используй `.env.example`)
-- ✅ Используй Django security middleware
-- ✅ Валидируй все входные данные
-- ✅ Используй CSRF protection
-
-## 📚 Основные модули
-
-### accounts
-- User модель (расширяемая)
-- Authentication endpoints
-- Profile management
-
-### applications
-- Job application модель
-- Application workflow
-- Notifications (TODO)
-
-### jobs (TODO)
-- Job posting
-- Filtering by level (Junior/Mid/Senior)
-- Requirements management
-
-### reviews (TODO)
-- Company reviews
-- Rating system
-- Moderation
-
-## 🚀 Когда вызывать Claude
-
-Используй Claude для:
-- ✅ Написания/рефакторинга кода
-- ✅ Отладки ошибок (приложи traceback или скриншот)
-- ✅ Планирования архитектуры
-- ✅ Написания тестов
-- ✅ Оптимизации запросов
-
-Не забывай:
-- Пастить error messages полностью
-- Приложить релевантный код контекст
-- Описать что ты пытался сделать
-
-## 📋 Useful Commands
+## Тестирование
 
 ```bash
-# Development
-python manage.py runserver
-python manage.py shell
+cd backend
+python manage.py test                    # Все тесты
+python manage.py test accounts           # Один модуль
+python manage.py test accounts.tests.TestClassName.test_method  # Один тест
+```
 
-# Database
+## Полезные команды
+
+```bash
+# Backend
+python manage.py runserver
 python manage.py makemigrations
 python manage.py migrate
-python manage.py dbshell
-
-# Testing
-python manage.py test
-coverage run --source='.' manage.py test
-coverage report -m
-
-# Admin
+python manage.py seed_data          # Загрузить демо-данные
+python manage.py seed_data --reset  # Сбросить + загрузить
 python manage.py createsuperuser
-python manage.py changepassword <username>
+
+# Frontend
+cd frontend_app
+flutter pub get
+flutter run
+flutter analyze
 ```
 
-## 🎓 Reference Materials
+## API Endpoints (основные)
 
-- [Claude Code Best Practices](../claude-code-best-practice/) — общие рекомендации
-- [Django Documentation](https://docs.djangoproject.com/)
-- [Django REST Framework](https://www.django-rest-framework.org/)
-- PROJECT_INFO.md — требования проекта
-- test_coverage.md — текущее состояние тестов
+```
+POST /api/accounts/register/
+POST /api/accounts/login/
+POST /api/accounts/token/refresh/
+GET  /api/accounts/profiles/me/
+
+GET/POST    /api/jobs/
+GET         /api/jobs/{id}/
+POST        /api/jobs/{id}/favorite/
+
+GET/POST    /api/applications/
+PATCH       /api/applications/{id}/status/
+GET         /api/applications/{id}/messages/
+POST        /api/applications/{id}/send/
+
+GET         /api/tests/
+POST        /api/tests/{id}/submit/
+
+GET         /api/analytics/analyze/{job_id}/
+POST        /api/analytics/match/
+POST        /api/analytics/compare/
+
+GET/POST    /api/reviews/
+GET/POST    /api/notifications/
+```
+
+## Conventions
+
+- ViewSets + Routers для CRUD
+- Permission classes для разграничения HR / applicant
+- Serializers для валидации
+- Signals для уведомлений (notifications/signals.py)
+- `created_at` / `updated_at` на всех моделях
 
 ---
 
-**Last Updated**: 2026-04-12
+**Last Updated**: 2026-05-22

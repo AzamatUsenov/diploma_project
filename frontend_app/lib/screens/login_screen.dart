@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 Text('С возвращением!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onSurface)),
                 const SizedBox(height: 8),
-                Text('Войдите в JobPlatform', style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                Text('Войдите в JobPlatform', style: TextStyle(fontSize: 15, color: Theme.of(context).hintColor)),
                 const SizedBox(height: 32),
                 TextField(
                   controller: _usernameCtrl,
