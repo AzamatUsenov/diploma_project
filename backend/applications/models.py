@@ -39,3 +39,26 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.username}: {self.text[:50]}"
+
+
+class Interview(models.Model):
+    STATUS_CHOICES = [
+        ('scheduled', 'Запланировано'),
+        ('confirmed', 'Подтверждено'),
+        ('completed', 'Проведено'),
+        ('cancelled', 'Отменено'),
+    ]
+
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='interviews')
+    scheduled_at = models.DateTimeField()
+    duration_minutes = models.IntegerField(default=30)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    notes = models.TextField(blank=True, default='')
+    location = models.CharField(max_length=255, blank=True, default='', help_text='Ссылка на звонок или адрес')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['scheduled_at']
+
+    def __str__(self):
+        return f"Interview {self.application} at {self.scheduled_at}"

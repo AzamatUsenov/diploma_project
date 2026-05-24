@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Application, Message
+from .models import Application, Message, Interview
 from accounts.serializers import UserProfileSerializer
 
 
@@ -82,3 +82,23 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class MessageCreateSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=2000)
+
+
+class InterviewSerializer(serializers.ModelSerializer):
+    applicant_username = serializers.CharField(source='application.applicant.username', read_only=True)
+    job_title = serializers.CharField(source='application.job.title', read_only=True)
+
+    class Meta:
+        model = Interview
+        fields = [
+            'id', 'application', 'applicant_username', 'job_title',
+            'scheduled_at', 'duration_minutes', 'status', 'notes',
+            'location', 'created_at',
+        ]
+        read_only_fields = ['created_at']
+
+
+class InterviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Interview
+        fields = ['application', 'scheduled_at', 'duration_minutes', 'notes', 'location']

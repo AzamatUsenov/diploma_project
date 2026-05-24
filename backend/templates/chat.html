@@ -29,10 +29,16 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="chat-subtitle"></p>
             </div>
         </div>
-        <a id="chat-job-link" href="#" class="btn-ghost !text-xs flex items-center gap-1 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            Вакансия
-        </a>
+        <div class="flex items-center gap-2 shrink-0">
+            <button id="btn-live-coding" onclick="openLiveModal()" class="hidden btn-ghost !text-xs flex items-center gap-1 text-primary-600 hover:text-primary-700">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                Live Coding
+            </button>
+            <a id="chat-job-link" href="#" class="btn-ghost !text-xs flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Вакансия
+            </a>
+        </div>
     </div>
 
     <!-- Messages area -->
@@ -53,6 +59,50 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                 </button>
             </form>
+        </div>
+    </div>
+</div>
+<!-- Live Coding Modal (HR only) -->
+<div id="live-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 slide-up">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Live Coding сессия</h2>
+            <button onclick="closeLiveModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Tabs: Create / Existing -->
+        <div class="flex gap-2 mb-4">
+            <button onclick="showLiveTab('create')" id="tab-create" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary-600 text-white">Создать новую</button>
+            <button onclick="showLiveTab('existing')" id="tab-existing" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">Мои сессии</button>
+        </div>
+
+        <!-- Create session form -->
+        <div id="live-tab-create">
+            <form onsubmit="createAndSendInvite(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Название</label>
+                    <input type="text" id="live-title" required class="input-field" placeholder="Backend интервью — Python">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Лимит времени (мин)</label>
+                    <input type="number" id="live-time-limit" value="30" min="10" max="120" class="input-field">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Задачи</label>
+                    <div id="live-task-picker" class="space-y-2 max-h-48 overflow-y-auto border dark:border-gray-600 rounded-xl p-2"></div>
+                    <p class="text-xs text-gray-400 mt-1">Выберите задачи для сессии</p>
+                </div>
+                <button type="submit" id="btn-create-send" class="btn-primary w-full">Создать и отправить приглашение</button>
+            </form>
+        </div>
+
+        <!-- Existing sessions -->
+        <div id="live-tab-existing" class="hidden">
+            <div id="existing-sessions-list" class="space-y-2">
+                <div class="text-sm text-gray-400 text-center py-4">Загрузка...</div>
+            </div>
         </div>
     </div>
 </div>
@@ -89,8 +139,16 @@
             document.getElementById('chat-subtitle').textContent = app.job_title;
             document.getElementById('chat-job-link').href = `/jobs/${app.job}/`;
 
+            if (isHR) {
+                document.getElementById('btn-live-coding').classList.remove('hidden');
+            }
+
             await loadMessages();
             pollInterval = setInterval(loadMessages, 4000);
+
+            if (isHR && window.location.hash === '#live') {
+                openLiveModal();
+            }
         } catch(e) {
             console.error('Chat init error:', e);
             document.getElementById('chat-messages').innerHTML = `
@@ -173,7 +231,9 @@
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
-        return div.innerHTML;
+        let html = div.innerHTML;
+        html = html.replace(/(\/live\/\?code=[A-Z0-9]+)/g, '<a href="$1" class="underline font-medium hover:opacity-80">$1</a>');
+        return html;
     }
 
     async function sendMessage(e) {
@@ -219,6 +279,137 @@
     window.addEventListener('beforeunload', () => {
         if (pollInterval) clearInterval(pollInterval);
     });
+
+    // ---- Live Coding Modal (HR) ----
+
+    function openLiveModal() {
+        document.getElementById('live-modal').classList.remove('hidden');
+        loadLiveTaskPicker();
+        showLiveTab('create');
+    }
+
+    function closeLiveModal() {
+        document.getElementById('live-modal').classList.add('hidden');
+    }
+
+    function showLiveTab(tab) {
+        const createTab = document.getElementById('live-tab-create');
+        const existingTab = document.getElementById('live-tab-existing');
+        const btnCreate = document.getElementById('tab-create');
+        const btnExisting = document.getElementById('tab-existing');
+
+        if (tab === 'create') {
+            createTab.classList.remove('hidden');
+            existingTab.classList.add('hidden');
+            btnCreate.className = 'text-xs px-3 py-1.5 rounded-lg font-medium bg-primary-600 text-white';
+            btnExisting.className = 'text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+        } else {
+            createTab.classList.add('hidden');
+            existingTab.classList.remove('hidden');
+            btnExisting.className = 'text-xs px-3 py-1.5 rounded-lg font-medium bg-primary-600 text-white';
+            btnCreate.className = 'text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+            loadExistingSessions();
+        }
+    }
+
+    async function loadLiveTaskPicker() {
+        try {
+            const tasks = await api('/live/sessions/available-tasks/');
+            const picker = document.getElementById('live-task-picker');
+            if (tasks.length === 0) {
+                picker.innerHTML = '<p class="text-sm text-gray-400">Нет доступных code-задач</p>';
+                return;
+            }
+            picker.innerHTML = tasks.map(q => `
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <input type="checkbox" name="live_questions" value="${q.id}" class="rounded text-primary-600">
+                    <span class="text-sm flex-1">${q.text.substring(0, 50)}...</span>
+                    <span class="text-xs text-gray-400">${q.language}</span>
+                </label>`).join('');
+        } catch(e) {
+            document.getElementById('live-task-picker').innerHTML = '<p class="text-sm text-danger-500">Ошибка загрузки задач</p>';
+        }
+    }
+
+    async function createAndSendInvite(e) {
+        e.preventDefault();
+        const checked = [...document.querySelectorAll('input[name="live_questions"]:checked')];
+        if (checked.length === 0) { toast('Выберите хотя бы одну задачу', 'error'); return; }
+
+        const btn = document.getElementById('btn-create-send');
+        btn.disabled = true;
+        btn.textContent = 'Создание...';
+
+        try {
+            const session = await api('/live/sessions/', {
+                method: 'POST',
+                body: {
+                    title: document.getElementById('live-title').value,
+                    time_limit_minutes: parseInt(document.getElementById('live-time-limit').value),
+                    question_ids: checked.map(c => parseInt(c.value)),
+                }
+            });
+
+            btn.textContent = 'Отправка приглашения...';
+
+            await api(`/live/sessions/${session.id}/send-invite/`, {
+                method: 'POST',
+                body: { application_id: parseInt(appId) }
+            });
+
+            toast('Приглашение отправлено в чат!');
+            closeLiveModal();
+            lastMessageId = 0;
+            await loadMessages();
+        } catch(e) {
+            toast('Ошибка: ' + (e.detail || 'Не удалось создать сессию'), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Создать и отправить приглашение';
+        }
+    }
+
+    async function loadExistingSessions() {
+        try {
+            const data = await api('/live/sessions/');
+            const sessions = data.results || data;
+            const container = document.getElementById('existing-sessions-list');
+
+            if (sessions.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Нет созданных сессий</p>';
+                return;
+            }
+
+            container.innerHTML = sessions.filter(s => s.status === 'waiting').map(s => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${s.title}</div>
+                        <div class="text-xs text-gray-500">Код: <span class="font-mono font-bold text-primary-600">${s.invite_code}</span> · ${s.time_limit_minutes} мин</div>
+                    </div>
+                    <button onclick="sendExistingInvite('${s.id}')" class="btn-primary !text-xs !py-1.5 !px-3">
+                        Отправить
+                    </button>
+                </div>
+            `).join('') || '<p class="text-sm text-gray-400 text-center py-4">Нет ожидающих сессий</p>';
+        } catch(e) {
+            document.getElementById('existing-sessions-list').innerHTML = '<p class="text-sm text-danger-500">Ошибка загрузки</p>';
+        }
+    }
+
+    async function sendExistingInvite(sessionId) {
+        try {
+            await api(`/live/sessions/${sessionId}/send-invite/`, {
+                method: 'POST',
+                body: { application_id: parseInt(appId) }
+            });
+            toast('Приглашение отправлено!');
+            closeLiveModal();
+            lastMessageId = 0;
+            await loadMessages();
+        } catch(e) {
+            toast('Ошибка отправки: ' + (e.detail || ''), 'error');
+        }
+    }
 
     initChat();
 </script>

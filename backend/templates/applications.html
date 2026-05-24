@@ -135,6 +135,12 @@
                                 Чат
                             </a>
                             ${isHR ? `
+                            <a href="/applications/${app.id}/chat/#live" class="text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                                Live Coding
+                            </a>
+                            ` : ''}
+                            ${isHR ? `
                             ${app.status !== 'accepted' ? `<button onclick="updateStatus(${app.id}, 'accepted')" class="text-xs px-3 py-1.5 rounded-lg bg-success-50 text-success-700 hover:bg-success-100 font-medium transition">Принять</button>` : ''}
                             ${app.status !== 'reviewed' ? `<button onclick="updateStatus(${app.id}, 'reviewed')" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition">Просмотрено</button>` : ''}
                             ${app.status !== 'rejected' ? `<button onclick="updateStatus(${app.id}, 'rejected')" class="text-xs px-3 py-1.5 rounded-lg bg-danger-50 text-danger-700 hover:bg-danger-100 font-medium transition">Отклонить</button>` : ''}

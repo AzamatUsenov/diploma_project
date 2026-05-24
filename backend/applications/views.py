@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.db.models import Count, Q, Avg
 from django.utils import timezone
 from datetime import timedelta
-from .models import Application, Message
+from .models import Application, Message, Interview
 from .serializers import (
     ApplicationListSerializer,
     ApplicationDetailSerializer,
@@ -13,6 +13,8 @@ from .serializers import (
     ApplicationStatusSerializer,
     MessageSerializer,
     MessageCreateSerializer,
+    InterviewSerializer,
+    InterviewCreateSerializer,
 )
 from accounts.permissions import IsHR, IsApplicant
 
@@ -160,3 +162,55 @@ def hr_stats_view(request):
         'funnel': funnel,
         'per_job': per_job,
     })
+
+
+class InterviewViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        profile = getattr(user, 'profile', None)
+        if profile and profile.role == 'hr':
+            return Interview.objects.filter(
+                application__job__posted_by=user
+            ).select_related('application__applicant', 'application__job')
+        return Interview.objects.filter(
+            application__applicant=user
+        ).select_related('application__applicant', 'application__job')
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return InterviewCreateSerializer
+        return InterviewSerializer
+
+    def perform_create(self, serializer):
+        interview = serializer.save()
+        app = interview.application
+        Message.objects.create(
+            application=app,
+            sender=self.request.user,
+            text=(
+                f"Назначено собеседование!\n"
+                f"Дата: {interview.scheduled_at.strftime('%d.%m.%Y %H:%M')}\n"
+                f"Длительность: {interview.duration_minutes} мин\n"
+                f"{('Место: ' + interview.location) if interview.location else ''}"
+            ),
+        )
+
+    @action(detail=True, methods=['patch'], url_path='status')
+    def update_status(self, request, pk=None):
+        interview = self.get_object()
+        new_status = request.data.get('status')
+        if new_status not in dict(Interview.STATUS_CHOICES):
+            return Response({'detail': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+        interview.status = new_status
+        interview.save()
+        return Response(InterviewSerializer(interview).data)
+
+    @action(detail=False, methods=['get'], url_path='upcoming')
+    def upcoming(self, request):
+        qs = self.get_queryset().filter(
+            scheduled_at__gte=timezone.now(),
+            status__in=['scheduled', 'confirmed'],
+        ).order_by('scheduled_at')[:10]
+        return Response(InterviewSerializer(qs, many=True).data)
