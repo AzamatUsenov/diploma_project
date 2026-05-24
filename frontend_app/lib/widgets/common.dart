@@ -65,11 +65,11 @@ class SalaryText extends StatelessWidget {
   Widget build(BuildContext context) {
     String text;
     if (min != null && max != null) {
-      text = '${_fmt(min!)} - ${_fmt(max!)} ₸';
+      text = '${_fmt(min!)} - ${_fmt(max!)} сўм';
     } else if (max != null) {
-      text = 'до ${_fmt(max!)} ₸';
+      text = 'до ${_fmt(max!)} сўм';
     } else if (min != null) {
-      text = 'от ${_fmt(min!)} ₸';
+      text = 'от ${_fmt(min!)} сўм';
     } else {
       text = 'Не указана';
     }

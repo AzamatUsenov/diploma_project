@@ -13,6 +13,8 @@ import 'screens/tests_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/reviews_screen.dart';
+import 'screens/live_coding_screen.dart';
+import 'screens/calendar_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -224,6 +226,8 @@ class _AppShellState extends State<AppShell> {
       const JobsScreen(),
       const ApplicationsScreen(),
       const TestsScreen(),
+      const LiveCodingScreen(),
+      const CalendarScreen(),
       const ReviewsScreen(),
       NotificationsScreen(onViewed: _fetchUnreadCount),
       ProfileScreen(onLogout: _logout),
@@ -235,12 +239,14 @@ class _AppShellState extends State<AppShell> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) {
           setState(() => _currentIndex = i);
-          if (i == 4) _fetchUnreadCount();
+          if (i == 6) _fetchUnreadCount();
         },
         destinations: [
           const NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: 'Вакансии'),
           const NavigationDestination(icon: Icon(Icons.send_outlined), selectedIcon: Icon(Icons.send), label: 'Заявки'),
           const NavigationDestination(icon: Icon(Icons.quiz_outlined), selectedIcon: Icon(Icons.quiz), label: 'Тесты'),
+          const NavigationDestination(icon: Icon(Icons.code), selectedIcon: Icon(Icons.code), label: 'Live Code'),
+          const NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'Календарь'),
           const NavigationDestination(icon: Icon(Icons.rate_review_outlined), selectedIcon: Icon(Icons.rate_review), label: 'Отзывы'),
           NavigationDestination(
             icon: Badge(
