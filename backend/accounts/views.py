@@ -1,3 +1,4 @@
+import io
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -7,11 +8,14 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
+from django.http import HttpResponse
 from django.middleware.csrf import get_token
+from django.template.loader import render_to_string
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from xhtml2pdf import pisa
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer, RegisterSerializer
 from .permissions import IsOwnerOrReadOnly
@@ -59,6 +63,27 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             profile.resume = None
             profile.save()
         return Response({'detail': 'Resume deleted.'})
+
+    @action(detail=False, methods=['get'], url_path='generate-resume')
+    def generate_resume(self, request):
+        profile = request.user.profile
+        user = request.user
+
+        html = render_to_string('resume_pdf.html', {
+            'user': user,
+            'profile': profile,
+        })
+
+        buffer = io.BytesIO()
+        pisa_status = pisa.CreatePDF(html, dest=buffer, encoding='utf-8')
+
+        if pisa_status.err:
+            return Response({'detail': 'PDF generation error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="resume_{user.username}.pdf"'
+        return response
 
     @action(detail=False, methods=['post'], url_path='change-password')
     def change_password(self, request):
