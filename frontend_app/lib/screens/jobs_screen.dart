@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../widgets/common.dart';
 import 'job_detail_screen.dart';
 import 'compare_screen.dart';
+import 'company_screen.dart';
 
 Route _slideRoute(Widget page) {
   return PageRouteBuilder(
@@ -325,7 +326,10 @@ class _JobsScreenState extends State<JobsScreen> {
                 children: [
                   Icon(Icons.business, size: 14, color: Theme.of(context).hintColor),
                   const SizedBox(width: 4),
-                  Text(job['company'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Theme.of(context).hintColor)),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CompanyScreen(companyName: job['company'] ?? ''))),
+                    child: Text(job['company'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.primary)),
+                  ),
                   const SizedBox(width: 12),
                   Icon(Icons.location_on_outlined, size: 14, color: Theme.of(context).hintColor),
                   const SizedBox(width: 4),
@@ -428,8 +432,8 @@ class _JobsScreenState extends State<JobsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('от ${_fmtSalary(tempMin)} ₸', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
-                  Text('до ${_fmtSalary(tempMax)} ₸', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
+                  Text('от ${_fmtSalary(tempMin)} сўм', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
+                  Text('до ${_fmtSalary(tempMax)} сўм', style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
                 ],
               ),
               RangeSlider(

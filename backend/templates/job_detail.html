@@ -94,6 +94,25 @@
                     </div>
                 </div>
 
+                <!-- Company Card -->
+                <div id="company-card" class="card p-6 slide-up" style="animation-delay:0.05s">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-lg font-bold text-primary-700 shrink-0">
+                            ${job.company[0].toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <a href="/company/?name=${encodeURIComponent(job.company)}" class="text-lg font-semibold text-gray-900 hover:text-primary-600 transition">${job.company}</a>
+                            </div>
+                            <div id="company-desc" class="text-sm text-gray-500 italic">Загрузка...</div>
+                            <a href="/company/?name=${encodeURIComponent(job.company)}" class="inline-flex items-center gap-1 mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
+                                Все вакансии компании
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Analysis Card -->
                 <div class="card p-6 slide-up" style="animation-delay:0.1s">
                     <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -162,6 +181,7 @@
                     <a href="/login/?next=/jobs/${job.id}/" class="btn-primary inline-block">Войти</a>
                 </div>` : ''}
             `;
+            loadCompanyInfo(job.company);
         } catch(e) {
             document.getElementById('job-detail').innerHTML = '<p class="text-danger-500 text-center py-12">Ошибка загрузки вакансии</p>';
         }
@@ -223,7 +243,12 @@
                         Совпадающие (${match.matching_skills.length})
                     </h4>
                     <div class="flex flex-wrap gap-1.5">
-                        ${match.matching_skills.map(s => `<span class="text-xs px-2.5 py-1 bg-success-50 text-success-700 rounded-lg font-medium">${s}</span>`).join('') || '<span class="text-xs text-gray-400">нет</span>'}
+                        ${match.matching_skills.map(s => {
+                            const v = (match.verified_matching || []).includes(s);
+                            return v
+                                ? `<span class="text-xs px-2.5 py-1 bg-success-50 text-success-700 rounded-lg font-medium ring-1 ring-success-200 inline-flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>${s}</span>`
+                                : `<span class="text-xs px-2.5 py-1 bg-success-50/50 text-success-600 rounded-lg font-medium">${s}</span>`;
+                        }).join('') || '<span class="text-xs text-gray-400">нет</span>'}
                     </div>
                 </div>
                 <div>
@@ -297,6 +322,26 @@
             toast('Добавлено в избранное!');
         } catch(e) {
             toast('Уже в избранном', 'error');
+        }
+    }
+
+    async function loadCompanyInfo(companyName) {
+        try {
+            const info = await api(`/jobs/company-info/?name=${encodeURIComponent(companyName)}`);
+            const el = document.getElementById('company-desc');
+            if (el) {
+                el.textContent = info.description || 'Описание не указано';
+                el.classList.toggle('italic', !info.description);
+                if (info.jobs_count > 1) {
+                    const badge = document.createElement('span');
+                    badge.className = 'ml-2 text-xs px-2 py-0.5 rounded-lg bg-primary-50 text-primary-700 ring-1 ring-primary-200 font-medium';
+                    badge.textContent = `${info.jobs_count} вакансий`;
+                    el.parentElement.querySelector('a').insertAdjacentElement('afterend', badge);
+                }
+            }
+        } catch(e) {
+            const el = document.getElementById('company-desc');
+            if (el) el.textContent = '';
         }
     }
 

@@ -1,5 +1,7 @@
 from rest_framework import viewsets, filters
+from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
 from django.db.models import Count
 from .models import Job, JobTag
 from .serializers import (
@@ -9,6 +11,7 @@ from .serializers import (
     JobTagSerializer,
 )
 from accounts.permissions import IsHR, IsOwnerOrReadOnly, ReadOnly
+from accounts.models import UserProfile
 
 
 class JobViewSet(viewsets.ModelViewSet):
@@ -29,6 +32,10 @@ class JobViewSet(viewsets.ModelViewSet):
         qs = Job.objects.filter(is_active=True).annotate(
             applications_count=Count('applications')
         ).select_related('posted_by')
+
+        company = self.request.query_params.get('company')
+        if company:
+            qs = qs.filter(company__iexact=company)
 
         level = self.request.query_params.get('level')
         if level:
@@ -79,3 +86,25 @@ class JobTagViewSet(viewsets.ModelViewSet):
     queryset = JobTag.objects.all()
     serializer_class = JobTagSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+@api_view(['GET'])
+def company_info_view(request):
+    name = request.query_params.get('name', '').strip()
+    if not name:
+        return Response({'detail': 'Parameter "name" is required'}, status=400)
+
+    jobs = Job.objects.filter(company__iexact=name, is_active=True)
+    jobs_count = jobs.count()
+
+    profile = UserProfile.objects.filter(
+        role='hr', company_name__iexact=name
+    ).first()
+
+    return Response({
+        'name': name,
+        'description': profile.company_description if profile else '',
+        'hr_username': profile.user.username if profile else None,
+        'hr_id': profile.user.id if profile else None,
+        'jobs_count': jobs_count,
+    })

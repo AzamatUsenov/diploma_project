@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/common.dart';
 import 'reviews_screen.dart';
+import 'company_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
@@ -64,6 +65,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _headerCard(),
+                      const SizedBox(height: 12),
+                      _companyInfoCard(),
                       const SizedBox(height: 12),
                       _companyReviewsButton(),
                       const SizedBox(height: 12),
@@ -325,6 +328,52 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               )),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _companyInfoCard() {
+    final company = _job!['company'] ?? '';
+    return Card(
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => CompanyScreen(companyName: company)),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    company.isNotEmpty ? company[0].toUpperCase() : '?',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(company, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text('Все вакансии компании', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).hintColor),
+            ],
+          ),
         ),
       ),
     );
