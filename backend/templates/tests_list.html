@@ -22,7 +22,7 @@
 
 <!-- Test modal -->
 <div id="test-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
         <div id="test-modal-content"></div>
     </div>
 </div>
@@ -63,24 +63,28 @@
             grid.innerHTML = data.results.map((test, i) => {
                 const lang = langConfig[test.language] || langConfig.general;
                 const diff = diffConfig[test.difficulty] || diffConfig.easy;
+                const isCode = test.test_type === 'code';
                 return `
                 <div class="card p-6 slide-up flex flex-col" style="animation-delay:${i * 0.05}s">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-xl ${lang.bg} flex items-center justify-center text-2xl font-bold ${lang.text}">${lang.icon}</div>
+                            <div class="w-12 h-12 rounded-xl ${isCode ? 'bg-purple-100' : lang.bg} flex items-center justify-center text-2xl font-bold ${isCode ? 'text-purple-800' : lang.text}">${isCode ? '&#x1F4BB;' : lang.icon}</div>
                             <div>
                                 <h3 class="font-bold text-gray-900">${test.title}</h3>
-                                <span class="text-xs ${diff.color} px-2 py-0.5 rounded-lg font-medium">${diff.label}</span>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-xs ${diff.color} px-2 py-0.5 rounded-lg font-medium">${diff.label}</span>
+                                    ${isCode ? '<span class="text-xs bg-purple-50 text-purple-700 ring-1 ring-purple-200 px-2 py-0.5 rounded-lg font-medium">Live Coding</span>' : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
                     <p class="text-sm text-gray-500 mb-4 leading-relaxed flex-1">${test.description}</p>
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
                         <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            ${test.questions_count} вопросов
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isCode ? 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' : 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/></svg>
+                            ${test.questions_count} ${isCode ? 'задач' : 'вопросов'}
                         </div>
-                        <button onclick="startTest(${test.id})" class="btn-primary !py-2 !px-5 !text-sm">Пройти</button>
+                        <button onclick="startTest(${test.id})" class="btn-primary !py-2 !px-5 !text-sm">${isCode ? 'Решать' : 'Пройти'}</button>
                     </div>
                 </div>`;
             }).join('');
@@ -91,43 +95,331 @@
         if (!requireAuth()) return;
         try {
             const test = await api(`/tests/${testId}/`);
-            const modal = document.getElementById('test-modal');
-            const content = document.getElementById('test-modal-content');
+            const hasCode = test.questions.some(q => q.question_type === 'code');
 
-            content.innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-xl font-bold">${test.title}</h2>
-                        <p class="text-sm text-gray-500 mt-1">${test.questions.length} вопросов &middot; Для прохождения нужно 70%+</p>
-                    </div>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
+            if (hasCode) {
+                startCodeChallenge(test);
+            } else {
+                startQuizTest(test);
+            }
+        } catch(e) { toast('Ошибка загрузки теста', 'error'); console.error(e); }
+    }
+
+    function startQuizTest(test) {
+        const modal = document.getElementById('test-modal');
+        const content = document.getElementById('test-modal-content');
+
+        content.innerHTML = `
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">${test.title}</h2>
+                    <p class="text-sm text-gray-500 mt-1">${test.questions.length} вопросов &middot; Для прохождения нужно 70%+</p>
                 </div>
-                <form id="test-form" onsubmit="submitTest(event, ${test.id})">
-                    ${test.questions.map((q, i) => `
-                        <div class="mb-5 p-5 bg-gray-50 rounded-xl">
-                            <p class="font-medium mb-3 text-gray-900">
-                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold mr-2">${i + 1}</span>
-                                ${q.text}
-                            </p>
-                            <div class="space-y-2 ml-8">
-                                ${['a', 'b', 'c', 'd'].map(opt => q['option_' + opt] ? `
-                                    <label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2.5 rounded-lg transition group">
-                                        <input type="radio" name="q_${q.id}" value="${opt}" required class="text-primary-600 focus:ring-primary-500">
-                                        <span class="group-hover:text-gray-900 text-gray-600"><strong class="text-gray-500">${opt.toUpperCase()}.</strong> ${q['option_' + opt]}</span>
-                                    </label>
-                                ` : '').join('')}
-                            </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="test-form" onsubmit="submitTest(event, ${test.id})">
+                ${test.questions.map((q, i) => `
+                    <div class="mb-5 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <p class="font-medium mb-3 text-gray-900">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold mr-2">${i + 1}</span>
+                            ${q.text}
+                        </p>
+                        <div class="space-y-2 ml-8">
+                            ${['a', 'b', 'c', 'd'].map(opt => q['option_' + opt] ? `
+                                <label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white dark:hover:bg-gray-600 p-2.5 rounded-lg transition group">
+                                    <input type="radio" name="q_${q.id}" value="${opt}" required class="text-primary-600 focus:ring-primary-500">
+                                    <span class="group-hover:text-gray-900 text-gray-600"><strong class="text-gray-500">${opt.toUpperCase()}.</strong> ${q['option_' + opt]}</span>
+                                </label>
+                            ` : '').join('')}
                         </div>
-                    `).join('')}
-                    <button type="submit" id="test-submit-btn" class="w-full btn-primary !py-3 text-base">
-                        Отправить ответы
-                    </button>
-                </form>
-            `;
-            modal.classList.remove('hidden');
-        } catch(e) { toast('Ошибка загрузки теста', 'error'); }
+                    </div>
+                `).join('')}
+                <button type="submit" id="test-submit-btn" class="w-full btn-primary !py-3 text-base">
+                    Отправить ответы
+                </button>
+            </form>
+        `;
+        modal.classList.remove('hidden');
+    }
+
+    // === CODE CHALLENGE ===
+    let currentCodeTest = null;
+    let currentTaskIndex = 0;
+    let taskProgress = {};
+
+    async function startCodeChallenge(test) {
+        currentCodeTest = test;
+        currentTaskIndex = 0;
+        taskProgress = {};
+
+        // Load progress
+        try {
+            const progress = await api(`/tests/code/progress/${test.id}/`);
+            progress.tasks.forEach(t => { taskProgress[t.question_id] = t; });
+        } catch(e) { console.warn('Failed to load progress', e); }
+
+        const modal = document.getElementById('test-modal');
+        const content = document.getElementById('test-modal-content');
+        renderCodeTask(content);
+        modal.classList.remove('hidden');
+    }
+
+    function renderCodeTask(content) {
+        const q = currentCodeTest.questions[currentTaskIndex];
+        const totalTasks = currentCodeTest.questions.length;
+        const testNames = q.visible_tests || [];
+        const tp = taskProgress[q.id];
+
+        content.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-xl font-bold">${currentCodeTest.title}</h2>
+                    <p class="text-sm text-gray-500 mt-1">Задача ${currentTaskIndex + 1} из ${totalTasks}</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Task tabs -->
+            ${totalTasks > 1 ? `
+            <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+                ${currentCodeTest.questions.map((task, i) => {
+                    const tp = taskProgress[task.id];
+                    const solved = tp && tp.solved;
+                    const active = i === currentTaskIndex;
+                    return `
+                    <button onclick="switchTask(${i})" class="px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap flex items-center gap-1.5 ${active ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300' : solved ? 'bg-green-50 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                        ${solved ? '<svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : ''}
+                        Задача ${i + 1}
+                    </button>`;
+                }).join('')}
+            </div>` : ''}
+
+            <!-- Task description -->
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-4">
+                <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line">${q.text}</p>
+                ${testNames.length > 0 ? `
+                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <p class="text-xs font-semibold text-gray-500 mb-2">Тесты для проверки:</p>
+                    <div class="space-y-1">
+                        ${testNames.map(t => `
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+                                ${t}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>` : ''}
+            </div>
+
+            <!-- Code editor -->
+            <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 mb-4">
+                <div class="bg-gray-800 px-4 py-2 flex items-center justify-between">
+                    <span class="text-xs text-gray-400 font-medium">Python</span>
+                    <button onclick="resetCode()" class="text-xs text-gray-400 hover:text-white transition">Сбросить</button>
+                </div>
+                <textarea id="code-editor" class="w-full h-64 p-4 bg-gray-900 text-green-300 font-mono text-sm leading-relaxed resize-y focus:outline-none" spellcheck="false" placeholder="# Напишите код здесь...">${q.code_template || ''}</textarea>
+            </div>
+
+            <!-- Run button + history -->
+            <div class="flex gap-3 mb-4">
+                <button onclick="runCode(${q.id})" id="run-code-btn" class="flex-1 btn-primary !py-3 text-base flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Запустить код
+                </button>
+                <button onclick="showHistory(${q.id})" class="btn-secondary !py-3 !px-4 flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    История
+                </button>
+            </div>
+
+            <!-- Status indicator -->
+            ${tp && tp.solved ? `
+            <div class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl mb-4">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-sm font-medium text-green-700 dark:text-green-400">Задача решена</span>
+                <span class="text-xs text-green-600 ml-auto">${tp.attempts} попыток</span>
+            </div>` : tp && tp.attempts > 0 ? `
+            <div class="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl mb-4">
+                <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                <span class="text-sm font-medium text-orange-700 dark:text-orange-400">Лучший: ${tp.best_score}</span>
+                <span class="text-xs text-orange-600 ml-auto">${tp.attempts} попыток</span>
+            </div>` : ''}
+
+            <!-- Results panel -->
+            <div id="code-results" class="hidden"></div>
+        `;
+    }
+
+    function switchTask(index) {
+        currentTaskIndex = index;
+        const content = document.getElementById('test-modal-content');
+        renderCodeTask(content);
+    }
+
+    function resetCode() {
+        const q = currentCodeTest.questions[currentTaskIndex];
+        document.getElementById('code-editor').value = q.code_template || '';
+        document.getElementById('code-results').classList.add('hidden');
+    }
+
+    async function runCode(questionId) {
+        const btn = document.getElementById('run-code-btn');
+        const code = document.getElementById('code-editor').value;
+        const resultsDiv = document.getElementById('code-results');
+
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Выполняется...`;
+
+        try {
+            const result = await api(`/tests/code/submit/${questionId}/`, {
+                method: 'POST',
+                body: { code },
+            });
+            renderCodeResults(result, resultsDiv);
+
+            // Update progress on success
+            if (result.status === 'passed') {
+                taskProgress[questionId] = { solved: true, attempts: (taskProgress[questionId]?.attempts || 0) + 1, best_score: `${result.tests_passed}/${result.tests_total}` };
+                toast('Задача решена!', 'success');
+                // Re-render tabs to show green
+                setTimeout(() => {
+                    const content = document.getElementById('test-modal-content');
+                    renderCodeTask(content);
+                }, 1500);
+            } else {
+                if (taskProgress[questionId]) {
+                    taskProgress[questionId].attempts = (taskProgress[questionId].attempts || 0) + 1;
+                } else {
+                    taskProgress[questionId] = { solved: false, attempts: 1, best_score: `${result.tests_passed}/${result.tests_total}` };
+                }
+            }
+        } catch(e) {
+            resultsDiv.innerHTML = `
+                <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                    <p class="text-sm font-medium text-red-700 dark:text-red-400">Ошибка отправки</p>
+                    <p class="text-xs text-red-500 mt-1">${e.detail || 'Попробуйте ещё раз'}</p>
+                </div>`;
+            resultsDiv.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Запустить код`;
+        }
+    }
+
+    async function showHistory(questionId) {
+        const resultsDiv = document.getElementById('code-results');
+        resultsDiv.classList.remove('hidden');
+        resultsDiv.innerHTML = `<div class="text-center py-4 text-gray-400 text-sm">Загрузка...</div>`;
+
+        try {
+            const history = await api(`/tests/code/history/${questionId}/`);
+            if (history.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-center">
+                        <p class="text-sm text-gray-500">Попыток пока нет</p>
+                    </div>`;
+                return;
+            }
+            resultsDiv.innerHTML = `
+                <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+                    <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                        <span class="text-xs font-bold text-gray-500">История попыток (${history.length})</span>
+                    </div>
+                    <div class="divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto">
+                        ${history.map((h, i) => {
+                            const isPass = h.status === 'passed';
+                            const isErr = h.status === 'error' || h.status === 'timeout';
+                            const color = isPass ? 'text-green-600' : isErr ? 'text-red-600' : 'text-orange-600';
+                            const bg = isPass ? 'bg-green-50 dark:bg-green-900/10' : '';
+                            const date = new Date(h.created_at).toLocaleString('ru', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                            return `
+                            <div class="px-4 py-2.5 flex items-center gap-3 ${bg}">
+                                <span class="text-xs text-gray-400 w-5">#${history.length - i}</span>
+                                <svg class="w-4 h-4 ${color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    ${isPass ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+                                    : isErr ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
+                                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>'}
+                                </svg>
+                                <span class="text-sm font-medium ${color}">${h.tests_passed}/${h.tests_total}</span>
+                                <span class="text-xs text-gray-400 ml-auto">${h.execution_time_ms}ms &middot; ${date}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+        } catch(e) {
+            resultsDiv.innerHTML = `<div class="p-3 text-sm text-red-500">Ошибка загрузки истории</div>`;
+        }
+    }
+
+    function renderCodeResults(result, container) {
+        const { status, test_results, tests_passed, tests_total, error_message, execution_time_ms } = result;
+        const isError = status === 'error' || status === 'timeout';
+        const allPassed = status === 'passed';
+
+        let statusColor, statusBg, statusIcon, statusText;
+        if (allPassed) {
+            statusColor = 'text-green-700 dark:text-green-400';
+            statusBg = 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+            statusIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+            statusText = 'Все тесты пройдены!';
+        } else if (isError) {
+            statusColor = 'text-red-700 dark:text-red-400';
+            statusBg = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+            statusIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+            statusText = status === 'timeout' ? 'Превышено время выполнения (10 сек)' : 'Ошибка выполнения';
+        } else {
+            statusColor = 'text-orange-700 dark:text-orange-400';
+            statusBg = 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
+            statusIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>';
+            statusText = `Пройдено ${tests_passed} из ${tests_total} тестов`;
+        }
+
+        container.innerHTML = `
+            <div class="rounded-xl border ${statusBg} overflow-hidden">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 ${statusColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">${statusIcon}</svg>
+                        <span class="text-sm font-bold ${statusColor}">${statusText}</span>
+                    </div>
+                    <span class="text-xs text-gray-400">${execution_time_ms}ms</span>
+                </div>
+                ${isError && error_message ? `
+                    <div class="px-4 pb-3">
+                        <pre class="text-xs text-red-600 dark:text-red-400 font-mono bg-red-100/50 dark:bg-red-900/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">${escapeHtml(error_message)}</pre>
+                    </div>
+                ` : ''}
+                ${!isError && test_results && test_results.length > 0 ? `
+                    <div class="border-t border-gray-200/50 dark:border-gray-700">
+                        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                            ${test_results.map(t => `
+                                <div class="px-4 py-2.5 flex items-start gap-3">
+                                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0 ${t.passed ? 'text-green-500' : 'text-red-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        ${t.passed
+                                            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+                                            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'}
+                                    </svg>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium ${t.passed ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}">${escapeHtml(t.name)}</p>
+                                        ${!t.passed && t.message ? `<p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all">${escapeHtml(t.message)}</p>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        container.classList.remove('hidden');
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     async function submitTest(event, testId) {

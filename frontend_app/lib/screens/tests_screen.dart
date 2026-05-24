@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/common.dart';
+import 'code_challenge_screen.dart';
 
 class TestsScreen extends StatefulWidget {
   const TestsScreen({super.key});
@@ -63,9 +64,13 @@ class _TestsScreenState extends State<TestsScreen> {
       'junior': (Colors.green, 'Начальный'),
       'mid': (Colors.blue, 'Средний'),
       'senior': (Colors.purple, 'Продвинутый'),
+      'easy': (Colors.green, 'Начальный'),
+      'medium': (Colors.blue, 'Средний'),
+      'hard': (Colors.purple, 'Продвинутый'),
     };
     final (color, label) = diffConfig[difficulty] ?? (Colors.grey, difficulty);
     final questionCount = test['question_count'] ?? test['questions_count'] ?? 0;
+    final isCode = test['test_type'] == 'code';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -83,7 +88,7 @@ class _TestsScreenState extends State<TestsScreen> {
                   color: color.withAlpha(25),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.code, color: color.shade700),
+                child: Icon(isCode ? Icons.terminal : Icons.quiz, color: color.shade700),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -96,7 +101,18 @@ class _TestsScreenState extends State<TestsScreen> {
                       children: [
                         LevelBadge(difficulty),
                         const SizedBox(width: 8),
-                        Text('$questionCount вопросов', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+                        if (isCode) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.deepPurple.withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('Live Coding', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.deepPurple)),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Text('$questionCount ${isCode ? "задач" : "вопросов"}', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
                       ],
                     ),
                   ],
@@ -111,10 +127,18 @@ class _TestsScreenState extends State<TestsScreen> {
   }
 
   void _startTest(Map<String, dynamic> test) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => _TestTakingScreen(testId: test['id'], title: test['title'] ?? 'Тест')),
-    );
+    final testType = test['test_type'] ?? 'quiz';
+    if (testType == 'code') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CodeChallengeScreen(testId: test['id'], title: test['title'] ?? 'Live Coding')),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => _TestTakingScreen(testId: test['id'], title: test['title'] ?? 'Тест')),
+      );
+    }
   }
 }
 

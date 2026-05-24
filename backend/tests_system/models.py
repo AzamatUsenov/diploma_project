@@ -84,3 +84,32 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"{self.result.user.username} - Q{self.question.order}"
+
+
+class CodeSubmission(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('running', 'Running'),
+        ('passed', 'All Tests Passed'),
+        ('failed', 'Some Tests Failed'),
+        ('error', 'Execution Error'),
+        ('timeout', 'Timeout'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='code_submissions')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='submissions')
+    code = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    output = models.TextField(blank=True, default='')
+    test_results = models.JSONField(default=list, blank=True)
+    tests_passed = models.IntegerField(default=0)
+    tests_total = models.IntegerField(default=0)
+    execution_time_ms = models.IntegerField(default=0)
+    error_message = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.question} [{self.status}]"

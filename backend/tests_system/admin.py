@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import SkillTest, Question, TestResult, Answer
+from .models import SkillTest, Question, TestResult, Answer, CodeSubmission
 
 
 class QuestionInline(admin.TabularInline):
@@ -100,3 +100,31 @@ class AnswerAdmin(admin.ModelAdmin):
     @admin.display(description='Верно', boolean=True)
     def is_correct_icon(self, obj):
         return obj.is_correct
+
+
+@admin.register(CodeSubmission)
+class CodeSubmissionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'question_short', 'status_badge', 'tests_display', 'execution_time_ms', 'created_at')
+    list_filter = ('status', 'question__test')
+    search_fields = ('user__username', 'question__text')
+    readonly_fields = ('user', 'question', 'code', 'status', 'output', 'test_results',
+                       'tests_passed', 'tests_total', 'execution_time_ms', 'error_message', 'created_at')
+    list_per_page = 25
+
+    @admin.display(description='Задача')
+    def question_short(self, obj):
+        return obj.question.text[:50]
+
+    @admin.display(description='Статус')
+    def status_badge(self, obj):
+        colors = {'passed': '#22c55e', 'failed': '#f59e0b', 'error': '#ef4444', 'timeout': '#8b5cf6'}
+        color = colors.get(obj.status, '#9ca3af')
+        return format_html(
+            '<span style="background:{}; color:white; padding:2px 8px; border-radius:10px; font-size:11px">{}</span>',
+            color, obj.get_status_display())
+
+    @admin.display(description='Тесты')
+    def tests_display(self, obj):
+        if obj.tests_total == 0:
+            return '-'
+        return f'{obj.tests_passed}/{obj.tests_total}'
