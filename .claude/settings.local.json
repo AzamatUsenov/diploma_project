@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -t ~/.claude/projects/ 2>/dev/null | head -5)",
+      "Read(//c/Users/User/.claude/projects/**)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}
