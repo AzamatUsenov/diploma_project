@@ -1,162 +1,488 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}JobPlatform{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: { sans: ['Manrope', 'system-ui', 'sans-serif'] },
                     colors: {
-                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
-                        success: { 50: '#f0fdf4', 500: '#22c55e', 700: '#15803d' },
-                        warning: { 50: '#fffbeb', 500: '#f59e0b', 700: '#b45309' },
-                        danger: { 50: '#fef2f2', 500: '#ef4444', 700: '#b91c1c' },
+                        primary: {
+                            50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+                            400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+                            800: '#3730a3', 900: '#312e81',
+                        },
+                        success: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857' },
+                        warning: { 50: '#fffbeb', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
+                        danger: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
                     }
                 }
             }
         }
     </script>
     <style>
+        * { font-family: 'Manrope', system-ui, sans-serif; }
+
+        /* Темный режим: более светлые и читаемые шрифты */
+        .dark body { font-weight: 400; }
+        .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 { font-weight: 700; color: #f9fafb; }
+        .dark p, .dark span, .dark div { color: #e5e7eb; }
+        .dark .text-gray-900 { color: #f9fafb !important; }
+        .dark .text-gray-800 { color: #f3f4f6 !important; }
+        .dark .text-gray-700 { color: #e5e7eb !important; }
+        .dark .text-gray-600 { color: #d1d5db !important; }
+        .dark .text-gray-500 { color: #9ca3af !important; }
+        .dark .text-gray-400 { color: #6b7280 !important; }
         [x-cloak] { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .score-bar { transition: width 0.8s ease-out; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        .float { animation: float 3s ease-in-out infinite; }
+        .score-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Light mode buttons */
+        .btn-primary { @apply bg-primary-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] border-2 border-primary-700; }
+        .btn-secondary { @apply bg-white text-gray-700 px-5 py-2.5 rounded-xl font-medium border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 active:scale-[0.98]; }
+        .btn-ghost { @apply text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 text-sm font-medium border-2 border-transparent hover:border-gray-200; }
+
+        /* Dark mode */
+        .dark body { @apply bg-gray-900 text-gray-100; }
+        .glass { background: #ffffff; }
+        .dark .glass { background: #111827; border-color: rgba(55, 65, 81, 0.6); }
+        .dark .card { @apply bg-gray-800 border-gray-700; }
+        .dark .card-static { @apply bg-gray-800 border-gray-700; }
+        .dark .input-field { @apply bg-gray-800 border-gray-700 text-gray-100; }
+        .dark .btn-primary { @apply bg-primary-600 border-primary-700 hover:bg-primary-700; }
+        .dark .btn-secondary { @apply bg-gray-800 text-gray-200 border-gray-600 hover:bg-gray-700 hover:border-gray-500; }
+        .dark .btn-ghost { @apply text-gray-300 hover:bg-gray-800 hover:border-gray-700; }
+        .dark .nav-link { @apply text-gray-300 hover:text-primary-400 hover:bg-gray-800; }
+        .dark .nav-link-active { @apply text-primary-400 bg-gray-800; }
+        .dark .modal-overlay { background: rgba(0,0,0,0.7); }
+
+        .toast { position: fixed; top: 24px; right: 24px; z-index: 200; padding: 14px 24px; border-radius: 14px; color: #fff; font-size: 14px; font-weight: 500; animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 8px 32px -4px rgba(0,0,0,0.2); backdrop-filter: blur(8px); }
+        .toast-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        .gradient-text { background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        #scroll-top { transition: opacity 0.3s, transform 0.3s; }
+        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .count-up { animation: countUp 0.6s ease-out both; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <nav class="bg-white shadow-sm border-b sticky top-0 z-50">
+<body class="bg-gray-50/50 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-200">
+    <nav class="glass border-b border-gray-200/60 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-14">
-                <div class="flex items-center space-x-6">
-                    <a href="/" class="text-xl font-bold text-primary-600">JobPlatform</a>
-                    <a href="/jobs/" class="text-sm text-gray-600 hover:text-primary-600">Вакансии</a>
-                    <a href="/tests/" class="text-sm text-gray-600 hover:text-primary-600">Тесты</a>
-                    <a href="/compare/" class="text-sm text-gray-600 hover:text-primary-600">Сравнение</a>
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-1">
+                    <a href="/" class="flex items-center gap-2.5 mr-6 group">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:shadow-primary-500/40 transition-shadow">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <span class="text-lg font-bold text-gray-900 dark:text-gray-100 hidden sm:block">Job<span class="text-primary-600 dark:text-primary-400">Platform</span></span>
+                    </a>
+                    <div class="hidden md:flex items-center gap-3">
+                        <a href="/jobs/" class="nav-link" data-page="jobs">Вакансии</a>
+                        <a href="/tests/" class="nav-link" data-page="tests">Тесты</a>
+                        <a href="/live/" class="nav-link" data-page="live">Live Coding</a>
+                        <a href="/calendar/" class="nav-link" data-page="calendar">Календарь</a>
+                        <a href="/about/" class="nav-link" data-page="about">О платформе</a>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <select id="user-selector" class="text-sm border rounded px-2 py-1 text-gray-600" onchange="switchUser(this.value)">
-                        <option value="">Выберите пользователя</option>
-                    </select>
-                    <span id="user-badge" class="hidden text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700"></span>
+                <div class="flex items-center gap-2">
+                    <!-- Dark mode toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" title="Переключить тему">
+                        <svg id="theme-icon-light" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <svg id="theme-icon-dark" class="w-5 h-5 text-gray-600 dark:text-gray-400 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    </button>
+                    <div id="nav-guest" class="hidden items-center gap-2">
+                        <a href="/login/" class="nav-link hidden sm:block">Войти</a>
+                        <a href="/register/" class="btn-primary text-sm !py-2 !px-4">Регистрация</a>
+                    </div>
+                    <div id="nav-user" class="hidden items-center gap-1">
+                        <a id="nav-create-job" href="/jobs/create/" class="hidden nav-link !text-success-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg><span class="hidden sm:inline">Вакансия</span>
+                        </a>
+                        <a href="/dashboard/" class="nav-link hidden sm:block" data-page="dashboard">Дашборд</a>
+                        <a href="/applications/" class="nav-link hidden lg:block" data-page="applications">Заявки</a>
+                        <a href="/favorites/" class="nav-link hidden lg:block" data-page="favorites">Избранное</a>
+                        <div class="flex items-center gap-2 ml-1 pl-2 border-l border-gray-200 dark:border-gray-700">
+                            <a href="/profile/" class="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl px-2.5 py-1.5 transition-all" data-page="profile">
+                                <div id="nav-avatar" class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-purple-500 flex items-center justify-center text-sm font-bold text-white shadow-sm"></div>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block" id="nav-username"></span>
+                                <span id="nav-role-badge" class="text-xs px-2 py-0.5 rounded-full font-medium hidden sm:inline-block"></span>
+                            </a>
+                            <button onclick="logout()" class="text-gray-400 dark:text-gray-500 hover:text-danger-500 dark:hover:text-danger-400 p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-all" title="Выйти">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Mobile menu button -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition ml-1" id="mobile-menu-btn">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" id="menu-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden" id="menu-icon-close" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200/60 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg">
+            <div class="px-4 py-3 space-y-1">
+                <a href="/jobs/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition">Вакансии</a>
+                <a href="/tests/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition">Тесты</a>
+                <a href="/live/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition">Live Coding</a>
+                <a href="/about/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition">О платформе</a>
+                <div id="mobile-menu-auth" class="pt-2 mt-2 border-t border-gray-100 dark:border-gray-700 space-y-1">
+                    <a href="/dashboard/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-dashboard">Дашборд</a>
+                    <a href="/applications/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-apps">Заявки</a>
+                    <a href="/favorites/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-favs">Избранное</a>
+                    <a href="/profile/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition" id="mobile-profile">Профиль</a>
+                </div>
+                <div id="mobile-menu-guest" class="pt-2 mt-2 border-t border-gray-100 dark:border-gray-700 space-y-1">
+                    <a href="/login/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 transition">Войти</a>
+                    <a href="/register/" class="block px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition text-center border-2 border-primary-700">Регистрация</a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-white border-t mt-auto">
-        <div class="max-w-7xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
-            JobPlatform &copy; 2026 &mdash; Дипломный проект
+    <footer class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <span class="text-base font-bold text-gray-900 dark:text-gray-100">Job<span class="text-primary-600 dark:text-primary-400">Platform</span></span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Платформа для честного поиска работы. Анализируем требования вакансий и помогаем джуниорам.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Платформа</h4>
+                    <div class="space-y-2">
+                        <a href="/jobs/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">Вакансии</a>
+                        <a href="/tests/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">Тесты навыков</a>
+                        <a href="/about/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">О платформе</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Для разработчиков</h4>
+                    <div class="space-y-2">
+                        <a href="/api/docs/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">API Docs (Swagger)</a>
+                        <a href="/api/redoc/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">ReDoc</a>
+                        <a href="/api/schema/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">OpenAPI Schema</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Аккаунт</h4>
+                    <div class="space-y-2">
+                        <a href="/login/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">Войти</a>
+                        <a href="/register/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">Регистрация</a>
+                        <a href="/profile/" class="block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">Профиль</a>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-6 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <span class="text-sm text-gray-400 dark:text-gray-500">JobPlatform &copy; 2026. Дипломный проект.</span>
+                <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                    <span class="w-2 h-2 rounded-full bg-success-500 pulse-dot"></span>
+                    Django REST Framework + Tailwind CSS
+                </div>
+            </div>
         </div>
     </footer>
+
+    <!-- Scroll to top -->
+    <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-xl bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-xl opacity-0 pointer-events-none translate-y-4 transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+    </button>
 
     <script>
         const API = '/api';
 
-        // Current user state
-        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        let currentProfile = JSON.parse(localStorage.getItem('currentProfile') || 'null');
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
 
-        // API helper
+        function getCSRFToken() {
+            return getCookie('csrftoken');
+        }
+
+        // Dark mode
+        function initDarkMode() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            if (isDark) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Initialize dark mode before page renders
+        initDarkMode();
+
+        // Initialize CSRF token on page load
+        async function initCSRF() {
+            try {
+                await fetch('/api/accounts/csrf/', { credentials: 'same-origin' });
+            } catch(e) {
+                console.warn('Failed to initialize CSRF token:', e);
+            }
+        }
+        initCSRF();
+
+        function getTokens() {
+            const t = localStorage.getItem('tokens');
+            return t ? JSON.parse(t) : null;
+        }
+
+        function getProfile() {
+            const p = localStorage.getItem('profile');
+            return p ? JSON.parse(p) : null;
+        }
+
+        function saveAuth(data) {
+            localStorage.setItem('tokens', JSON.stringify(data.tokens));
+            localStorage.setItem('profile', JSON.stringify(data.user));
+            updateNav();
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('tokens');
+            localStorage.removeItem('profile');
+            updateNav();
+        }
+
+        function isLoggedIn() { return !!getTokens(); }
+
+        function logout() {
+            clearAuth();
+            window.location = '/';
+        }
+
+        async function refreshAccessToken() {
+            const tokens = getTokens();
+            if (!tokens || !tokens.refresh) { clearAuth(); return null; }
+            try {
+                const res = await fetch(`${API}/accounts/token/refresh/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh: tokens.refresh }),
+                });
+                if (!res.ok) { clearAuth(); return null; }
+                const data = await res.json();
+                tokens.access = data.access;
+                localStorage.setItem('tokens', JSON.stringify(tokens));
+                return tokens.access;
+            } catch { clearAuth(); return null; }
+        }
+
         async function api(path, options = {}) {
             const url = path.startsWith('http') ? path : `${API}${path}`;
-            const config = { headers: { 'Content-Type': 'application/json' }, ...options };
-            if (config.body && typeof config.body === 'object') {
-                config.body = JSON.stringify(config.body);
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+
+            // Add CSRF token for unsafe methods
+            const method = (options.method || 'GET').toUpperCase();
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                const csrfToken = getCSRFToken();
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
             }
-            const res = await fetch(url, config);
+
+            const tokens = getTokens();
+            if (tokens && tokens.access) {
+                headers['Authorization'] = `Bearer ${tokens.access}`;
+            }
+            if (options.body && typeof options.body === 'object') {
+                options.body = JSON.stringify(options.body);
+            }
+            let res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+            if (res.status === 401 && tokens) {
+                const newAccess = await refreshAccessToken();
+                if (newAccess) {
+                    headers['Authorization'] = `Bearer ${newAccess}`;
+                    res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+                }
+            }
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw { status: res.status, ...err };
             }
+            if (res.status === 204) return {};
             return res.json();
         }
 
-        // Load users into selector
-        async function loadUsers() {
-            try {
-                const data = await api('/accounts/profiles/');
-                const sel = document.getElementById('user-selector');
-                (data.results || []).forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = `${p.user.username} (${p.role}/${p.level || '-'})`;
-                    if (currentProfile && currentProfile.id === p.id) opt.selected = true;
-                    sel.appendChild(opt);
-                });
-                if (currentProfile) updateUserBadge();
-            } catch (e) {
-                console.error('Failed to load users:', e);
+        function updateNav() {
+            const profile = getProfile();
+            const guest = document.getElementById('nav-guest');
+            const user = document.getElementById('nav-user');
+            const mobileAuth = document.getElementById('mobile-menu-auth');
+            const mobileGuest = document.getElementById('mobile-menu-guest');
+
+            if (profile && isLoggedIn()) {
+                guest.classList.add('hidden');
+                user.classList.remove('hidden');
+                user.classList.add('flex');
+                mobileAuth.classList.remove('hidden');
+                mobileGuest.classList.add('hidden');
+                document.getElementById('nav-username').textContent = profile.user.username;
+                document.getElementById('nav-avatar').textContent = profile.user.username[0].toUpperCase();
+                const badge = document.getElementById('nav-role-badge');
+                const colors = { applicant: 'bg-success-50 text-success-700', hr: 'bg-warning-50 text-warning-700' };
+                const labels = { applicant: 'Соискатель', hr: 'HR' };
+                badge.className = `text-xs px-2 py-0.5 rounded-full font-medium hidden sm:inline-block ${colors[profile.role] || 'bg-gray-100'}`;
+                badge.textContent = labels[profile.role] || profile.role;
+                const createJobLink = document.getElementById('nav-create-job');
+                if (profile.role === 'hr') createJobLink.classList.remove('hidden');
+                else createJobLink.classList.add('hidden');
+            } else {
+                guest.classList.remove('hidden');
+                guest.classList.add('flex');
+                user.classList.add('hidden');
+                mobileAuth.classList.add('hidden');
+                mobileGuest.classList.remove('hidden');
             }
+
+            highlightActiveNav();
         }
 
-        function switchUser(profileId) {
-            if (!profileId) {
-                currentUser = null;
-                currentProfile = null;
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('currentProfile');
-                document.getElementById('user-badge').classList.add('hidden');
-                return;
-            }
-            api(`/accounts/profiles/${profileId}/`).then(p => {
-                currentProfile = p;
-                currentUser = p.user;
-                localStorage.setItem('currentUser', JSON.stringify(p.user));
-                localStorage.setItem('currentProfile', JSON.stringify(p));
-                updateUserBadge();
-                if (typeof onUserChanged === 'function') onUserChanged();
+        function highlightActiveNav() {
+            const path = window.location.pathname;
+            document.querySelectorAll('[data-page]').forEach(el => {
+                el.classList.remove('nav-link-active');
+                const page = el.dataset.page;
+                if ((page === 'jobs' && path.startsWith('/jobs')) ||
+                    (page === 'tests' && path.startsWith('/tests')) ||
+                    (page === 'about' && path.startsWith('/about')) ||
+                    (page === 'dashboard' && path.startsWith('/dashboard')) ||
+                    (page === 'applications' && path.startsWith('/applications')) ||
+                    (page === 'favorites' && path.startsWith('/favorites')) ||
+                    (page === 'profile' && path === '/profile/')) {
+                    el.classList.add('nav-link-active');
+                }
             });
         }
 
-        function updateUserBadge() {
-            const badge = document.getElementById('user-badge');
-            if (currentProfile) {
-                badge.textContent = `${currentProfile.level || currentProfile.role}`;
-                badge.classList.remove('hidden');
-                const colors = {
-                    junior: 'bg-green-100 text-green-700',
-                    mid: 'bg-blue-100 text-blue-700',
-                    senior: 'bg-purple-100 text-purple-700',
-                    hr: 'bg-orange-100 text-orange-700',
-                };
-                badge.className = `text-xs px-2 py-1 rounded-full ${colors[currentProfile.level] || colors[currentProfile.role] || 'bg-gray-100 text-gray-700'}`;
-            } else {
-                badge.classList.add('hidden');
-            }
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const iconOpen = document.getElementById('menu-icon-open');
+            const iconClose = document.getElementById('menu-icon-close');
+            const isHidden = menu.classList.contains('hidden');
+            menu.classList.toggle('hidden', !isHidden);
+            iconOpen.classList.toggle('hidden', isHidden);
+            iconClose.classList.toggle('hidden', !isHidden);
         }
 
-        // Score bar helper
+        function toast(msg, type = 'success') {
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'all 0.3s'; }, 2500);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        function requireAuth() {
+            if (!isLoggedIn()) {
+                toast('Войдите в аккаунт', 'error');
+                setTimeout(() => window.location = '/login/', 500);
+                return false;
+            }
+            return true;
+        }
+
         function scoreBar(score, max = 100) {
             const pct = Math.round((score / max) * 100);
-            const color = pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-500' : 'bg-red-500';
-            return `<div class="w-full bg-gray-200 rounded-full h-2"><div class="score-bar ${color} h-2 rounded-full" style="width:${pct}%"></div></div>`;
+            const color = pct >= 70 ? 'bg-success-500' : pct >= 40 ? 'bg-warning-500' : 'bg-danger-500';
+            return `<div class="w-full bg-gray-100 rounded-full h-2"><div class="score-bar ${color} h-2 rounded-full" style="width:${pct}%"></div></div>`;
         }
 
-        // Level badge helper
         function levelBadge(level) {
-            const colors = { junior: 'bg-green-100 text-green-800', mid: 'bg-blue-100 text-blue-800', senior: 'bg-purple-100 text-purple-800' };
-            return `<span class="text-xs px-2 py-0.5 rounded-full ${colors[level] || 'bg-gray-100'}">${level}</span>`;
+            const colors = {
+                junior: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+                mid: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+                senior: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+            };
+            const labels = { junior: 'Junior', mid: 'Middle', senior: 'Senior' };
+            return `<span class="text-xs px-2.5 py-1 rounded-lg font-medium ${colors[level] || 'bg-gray-100'}">${labels[level] || level}</span>`;
         }
 
-        // Format salary
         function formatSalary(min, max) {
             const fmt = n => n ? (n >= 1000000 ? (n/1000000).toFixed(1) + 'M' : Math.round(n/1000) + 'K') : '?';
-            if (min && max) return `${fmt(min)} - ${fmt(max)} ₸`;
-            if (max) return `до ${fmt(max)} ₸`;
-            if (min) return `от ${fmt(min)} ₸`;
+            if (min && max) return `${fmt(min)} - ${fmt(max)} сўм`;
+            if (max) return `до ${fmt(max)} сўм`;
+            if (min) return `от ${fmt(min)} сўм`;
             return 'Не указана';
         }
 
-        // Init
-        loadUsers();
+        function timeAgo(date) {
+            const now = new Date();
+            const d = new Date(date);
+            const diff = Math.floor((now - d) / 1000);
+            if (diff < 60) return 'только что';
+            if (diff < 3600) return Math.floor(diff / 60) + ' мин назад';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' ч назад';
+            if (diff < 2592000) return Math.floor(diff / 86400) + ' дн назад';
+            return d.toLocaleDateString('ru');
+        }
+
+        function loader() {
+            return `<div class="flex justify-center py-12"><div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div></div>`;
+        }
+
+        // Scroll to top button
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('scroll-top');
+            if (window.scrollY > 400) {
+                btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            } else {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }
+        });
+
+        updateNav();
     </script>
     {% block extra_js %}{% endblock %}
 </body>

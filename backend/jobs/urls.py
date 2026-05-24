@@ -7,5 +7,6 @@ router.register('tags', views.JobTagViewSet)
 router.register('', views.JobViewSet, basename='job')
 
 urlpatterns = [
+    path('company-info/', views.company_info_view, name='company-info'),
     path('', include(router.urls)),
 ]

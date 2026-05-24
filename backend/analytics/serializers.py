@@ -13,7 +13,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class FavoriteCreateSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
     job_id = serializers.IntegerField()
 
 
@@ -29,8 +28,6 @@ class AnalyzeJobSerializer(serializers.Serializer):
 
 
 class MatchRequestSerializer(serializers.Serializer):
-    """Request for match calculation."""
-    user_id = serializers.IntegerField()
     job_id = serializers.IntegerField()
 
 
@@ -45,10 +42,8 @@ class MatchResponseSerializer(serializers.Serializer):
 
 
 class CompareRequestSerializer(serializers.Serializer):
-    """Request for job comparison."""
     job_ids = serializers.ListField(
         child=serializers.IntegerField(),
         min_length=2,
         max_length=4,
     )
-    user_id = serializers.IntegerField(required=False)

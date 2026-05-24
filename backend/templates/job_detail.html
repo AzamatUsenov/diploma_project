@@ -3,191 +3,348 @@
 
 {% block content %}
 <div id="job-detail" class="space-y-6">
-    <p class="text-gray-500">Загрузка...</p>
+    <div class="flex justify-center py-12">
+        <div class="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+    </div>
+</div>
+
+<!-- Apply Modal -->
+<div id="apply-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 slide-up">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Откликнуться на вакансию</h2>
+            <button onclick="closeApplyModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="apply-job-info" class="bg-gray-50 rounded-xl p-4 mb-4"></div>
+        <form onsubmit="submitApplication(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Сопроводительное письмо</label>
+                <textarea id="cover-letter" rows="5" class="input-field" placeholder="Расскажите, почему вы подходите на эту позицию..."></textarea>
+                <p class="text-xs text-gray-400 mt-1">Необязательно, но повышает шансы</p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeApplyModal()" class="btn-secondary flex-1">Отмена</button>
+                <button type="submit" id="apply-submit-btn" class="btn-primary flex-1">Отправить отклик</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     const jobId = window.location.pathname.split('/').filter(Boolean).pop();
+    let currentJob = null;
 
     async function loadJob() {
         try {
             const job = await api(`/jobs/${jobId}/`);
+            currentJob = job;
             const analysis = await api(`/analytics/analyze/${jobId}/`);
 
             let matchHtml = '';
-            if (currentUser) {
+            if (isLoggedIn() && getProfile()?.role === 'applicant') {
                 try {
                     const match = await api('/analytics/match/', {
                         method: 'POST',
-                        body: { user_id: currentUser.id, job_id: parseInt(jobId) },
+                        body: { job_id: parseInt(jobId) },
                     });
                     matchHtml = renderMatch(match);
                 } catch(e) {}
             }
 
-            document.getElementById('job-detail').innerHTML = `
-                <a href="/jobs/" class="text-sm text-primary-600 hover:underline">&larr; Все вакансии</a>
+            const profile = getProfile();
+            const isApplicant = profile && profile.role === 'applicant';
+            const isOwner = profile && job.posted_by === profile.user.id;
 
-                <!-- Header -->
-                <div class="bg-white rounded-xl border shadow-sm p-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <h1 class="text-2xl font-bold">${job.title}</h1>
+            document.getElementById('job-detail').innerHTML = `
+                <a href="/jobs/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Все вакансии
+                </a>
+
+                <!-- Header Card -->
+                <div class="card p-6 slide-up">
+                    <div class="flex flex-col md:flex-row justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-3 flex-wrap">
+                                <h1 class="text-2xl font-bold text-gray-900">${job.title}</h1>
                                 ${levelBadge(job.level)}
+                                ${job.is_remote ? '<span class="text-xs px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 ring-1 ring-primary-200 font-medium">Remote</span>' : ''}
                             </div>
-                            <p class="text-gray-500">${job.company} &middot; ${job.location} ${job.is_remote ? '<span class="text-primary-600">&#127760; Remote</span>' : ''}</p>
+                            <div class="flex items-center gap-2 text-gray-500 mb-4">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                <span class="font-medium text-gray-700">${job.company}</span>
+                                <span class="text-gray-300">&#183;</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>${job.location}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${(job.tech_stack || []).map(t => `<span class="text-sm px-3 py-1 bg-primary-50 text-primary-700 rounded-lg font-medium">${t}</span>`).join('')}
+                                ${job.training_provided ? '<span class="text-sm px-3 py-1 bg-success-50 text-success-700 rounded-lg font-medium">&#10003; Обучение</span>' : ''}
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-lg font-bold">${formatSalary(job.salary_min, job.salary_max)}</div>
-                            <div class="text-sm text-gray-500">${job.experience_years} лет опыта</div>
+                        <div class="text-right shrink-0">
+                            <div class="text-2xl font-bold text-gray-900">${formatSalary(job.salary_min, job.salary_max)}</div>
+                            <div class="text-sm text-gray-500 mt-1">${job.experience_years} лет опыта</div>
+                            <div class="text-xs text-gray-400 mt-2">${timeAgo(job.created_at)}</div>
                         </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        ${(job.tech_stack || []).map(t => `<span class="text-sm px-3 py-1 bg-primary-50 text-primary-700 rounded-full">${t}</span>`).join('')}
-                        ${job.training_provided ? '<span class="text-sm px-3 py-1 bg-green-50 text-green-700 rounded-full">&#x2705; Обучение</span>' : ''}
                     </div>
                 </div>
 
-                <!-- Analysis -->
-                <div class="bg-white rounded-xl border shadow-sm p-6">
-                    <h2 class="font-semibold text-lg mb-4">Анализ вакансии</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div class="text-center p-3 rounded-lg ${analysis.honesty_score >= 70 ? 'bg-green-50' : analysis.honesty_score >= 40 ? 'bg-yellow-50' : 'bg-red-50'}">
-                            <div class="text-2xl font-bold ${analysis.honesty_score >= 70 ? 'text-green-600' : analysis.honesty_score >= 40 ? 'text-yellow-600' : 'text-red-600'}">${analysis.honesty_score}%</div>
-                            <div class="text-xs text-gray-500">Честность</div>
+                <!-- Company Card -->
+                <div id="company-card" class="card p-6 slide-up" style="animation-delay:0.05s">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-lg font-bold text-primary-700 shrink-0">
+                            ${job.company[0].toUpperCase()}
                         </div>
-                        <div class="text-center p-3 rounded-lg bg-gray-50">
-                            <div class="text-2xl font-bold">${analysis.detected_level}</div>
-                            <div class="text-xs text-gray-500">Реальный уровень</div>
-                        </div>
-                        <div class="text-center p-3 rounded-lg ${analysis.is_overqualified ? 'bg-red-50' : 'bg-green-50'}">
-                            <div class="text-2xl font-bold">${analysis.is_overqualified ? '&#x26A0;' : '&#x2705;'}</div>
-                            <div class="text-xs text-gray-500">${analysis.is_overqualified ? 'Завышены' : 'Адекватные'}</div>
-                        </div>
-                        <div class="text-center p-3 rounded-lg bg-gray-50">
-                            <div class="text-2xl font-bold">${analysis.parsed_skills.length}</div>
-                            <div class="text-xs text-gray-500">Навыков требуется</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <a href="/company/?name=${encodeURIComponent(job.company)}" class="text-lg font-semibold text-gray-900 hover:text-primary-600 transition">${job.company}</a>
+                            </div>
+                            <div id="company-desc" class="text-sm text-gray-500 italic">Загрузка...</div>
+                            <a href="/company/?name=${encodeURIComponent(job.company)}" class="inline-flex items-center gap-1 mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
+                                Все вакансии компании
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
                         </div>
                     </div>
-                    ${analysis.overqualification_details ? `
-                        <div class="p-3 rounded-lg bg-gray-50 text-sm text-gray-600">
+                </div>
+
+                <!-- Analysis Card -->
+                <div class="card p-6 slide-up" style="animation-delay:0.1s">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Анализ вакансии
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="rounded-xl p-4 ${analysis.honesty_score >= 70 ? 'bg-success-50' : analysis.honesty_score >= 40 ? 'bg-warning-50' : 'bg-danger-50'}">
+                            <div class="text-3xl font-bold ${analysis.honesty_score >= 70 ? 'text-success-600' : analysis.honesty_score >= 40 ? 'text-warning-600' : 'text-danger-600'}">${analysis.honesty_score}%</div>
+                            <div class="text-xs text-gray-500 mt-1 font-medium">Честность</div>
+                            ${scoreBar(analysis.honesty_score)}
+                        </div>
+                        <div class="rounded-xl p-4 bg-gray-50">
+                            <div class="text-3xl font-bold text-gray-900">${analysis.detected_level}</div>
+                            <div class="text-xs text-gray-500 mt-1 font-medium">Реальный уровень</div>
+                            ${analysis.detected_level !== job.level
+                                ? `<div class="text-xs text-danger-600 mt-1 font-medium">Заявлен: ${job.level}</div>`
+                                : '<div class="text-xs text-success-600 mt-1 font-medium">Совпадает</div>'}
+                        </div>
+                        <div class="rounded-xl p-4 ${analysis.is_overqualified ? 'bg-danger-50' : 'bg-success-50'}">
+                            <div class="text-3xl font-bold">${analysis.is_overqualified ? '&#x26A0;' : '&#10003;'}</div>
+                            <div class="text-xs text-gray-500 mt-1 font-medium">${analysis.is_overqualified ? 'Требования завышены' : 'Адекватные требования'}</div>
+                        </div>
+                        <div class="rounded-xl p-4 bg-gray-50">
+                            <div class="text-3xl font-bold text-gray-900">${analysis.parsed_skills.length}</div>
+                            <div class="text-xs text-gray-500 mt-1 font-medium">Навыков требуется</div>
+                        </div>
+                    </div>
+                    ${analysis.overqualification_details && analysis.overqualification_details.explanation ? `
+                        <div class="p-4 rounded-xl bg-warning-50 border border-warning-100 text-sm text-warning-800 mb-4">
+                            <div class="font-medium mb-1">&#x26A0; Замечание</div>
                             ${analysis.overqualification_details.explanation}
                         </div>
                     ` : ''}
-                    <div class="mt-4">
-                        <h3 class="text-sm font-medium mb-2">Навыки по уровням:</h3>
-                        <div class="space-y-2">
-                            ${renderSkillsByLevel(analysis.skills_by_level)}
-                        </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Навыки по уровням</h3>
+                        <div class="space-y-3">${renderSkillsByLevel(analysis.skills_by_level)}</div>
                     </div>
                 </div>
 
                 ${matchHtml}
 
-                <!-- Description -->
-                <div class="bg-white rounded-xl border shadow-sm p-6">
-                    <h2 class="font-semibold text-lg mb-3">Описание</h2>
-                    <p class="text-gray-700 whitespace-pre-line">${job.description}</p>
-                    <h3 class="font-medium mt-4 mb-2">Требования:</h3>
-                    <p class="text-gray-700 whitespace-pre-line">${job.requirements_text}</p>
+                <!-- Description Card -->
+                <div class="card p-6 slide-up" style="animation-delay:0.2s">
+                    <h2 class="text-lg font-semibold mb-4">Описание</h2>
+                    <div class="prose prose-sm max-w-none text-gray-600 whitespace-pre-line mb-6">${job.description}</div>
+                    <h3 class="font-semibold text-gray-900 mb-3">Требования</h3>
+                    <div class="prose prose-sm max-w-none text-gray-600 whitespace-pre-line">${job.requirements_text}</div>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex gap-3">
-                    <button onclick="addToFavorites(${job.id})" class="bg-white border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">&#9734; В избранное</button>
-                    <button onclick="applyToJob(${job.id})" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700">Откликнуться</button>
-                </div>
+                ${isApplicant ? `
+                <div class="flex gap-3 slide-up" style="animation-delay:0.3s">
+                    <button onclick="addToFavorites(${job.id})" class="btn-secondary flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        В избранное
+                    </button>
+                    <button onclick="openApplyModal()" class="btn-primary flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        Откликнуться
+                    </button>
+                </div>` : ''}
+                ${!isLoggedIn() ? `
+                <div class="card p-6 text-center slide-up">
+                    <p class="text-gray-500 mb-3">Войдите, чтобы откликнуться на вакансию</p>
+                    <a href="/login/?next=/jobs/${job.id}/" class="btn-primary inline-block">Войти</a>
+                </div>` : ''}
             `;
+            loadCompanyInfo(job.company);
         } catch(e) {
-            document.getElementById('job-detail').innerHTML = '<p class="text-red-500">Ошибка загрузки вакансии</p>';
+            document.getElementById('job-detail').innerHTML = '<p class="text-danger-500 text-center py-12">Ошибка загрузки вакансии</p>';
         }
     }
 
     function renderSkillsByLevel(skills) {
         let html = '';
-        if (skills.junior && skills.junior.length) {
-            html += `<div class="flex flex-wrap gap-1"><span class="text-xs text-green-700 font-medium mr-1">Junior:</span>${skills.junior.map(s => `<span class="text-xs px-2 py-0.5 bg-green-100 rounded">${s}</span>`).join('')}</div>`;
-        }
-        if (skills.mid && skills.mid.length) {
-            html += `<div class="flex flex-wrap gap-1"><span class="text-xs text-blue-700 font-medium mr-1">Mid:</span>${skills.mid.map(s => `<span class="text-xs px-2 py-0.5 bg-blue-100 rounded">${s}</span>`).join('')}</div>`;
-        }
-        if (skills.senior && skills.senior.length) {
-            html += `<div class="flex flex-wrap gap-1"><span class="text-xs text-purple-700 font-medium mr-1">Senior:</span>${skills.senior.map(s => `<span class="text-xs px-2 py-0.5 bg-purple-100 rounded">${s}</span>`).join('')}</div>`;
+        const levels = [
+            { key: 'junior', label: 'Junior', colors: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+            { key: 'mid', label: 'Middle', colors: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' },
+            { key: 'senior', label: 'Senior', colors: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200' },
+        ];
+        for (const l of levels) {
+            if (skills[l.key] && skills[l.key].length) {
+                html += `<div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-gray-500 w-14">${l.label}</span>
+                    ${skills[l.key].map(s => `<span class="text-xs px-2.5 py-1 rounded-lg ${l.colors} font-medium">${s}</span>`).join('')}
+                </div>`;
+            }
         }
         return html || '<span class="text-xs text-gray-400">Нет данных</span>';
     }
 
     function renderMatch(match) {
-        const scoreColor = match.match_score >= 70 ? 'text-green-600' : match.match_score >= 40 ? 'text-yellow-600' : 'text-red-600';
+        const scoreColor = match.match_score >= 70 ? 'text-success-600' : match.match_score >= 40 ? 'text-warning-600' : 'text-danger-600';
+        const scoreBg = match.match_score >= 70 ? 'bg-success-50' : match.match_score >= 40 ? 'bg-warning-50' : 'bg-danger-50';
         return `
-        <div class="bg-white rounded-xl border shadow-sm p-6">
-            <h2 class="font-semibold text-lg mb-4">Ваш матч</h2>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="text-center">
-                    <div class="text-3xl font-bold ${scoreColor}">${match.match_score}%</div>
-                    <div class="text-xs text-gray-500">Совпадение</div>
+        <div class="card p-6 slide-up" style="animation-delay:0.15s">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                Ваш матч
+            </h2>
+            <div class="flex items-center gap-6 mb-6">
+                <div class="text-center shrink-0">
+                    <div class="relative w-24 h-24">
+                        <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="${match.match_score >= 70 ? '#10b981' : match.match_score >= 40 ? '#f59e0b' : '#ef4444'}" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="${Math.round(match.match_score * 2.64)} 264"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-2xl font-bold ${scoreColor}">${match.match_score}%</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex-1">${scoreBar(match.match_score)}</div>
-                <div class="text-sm ${match.can_apply ? 'text-green-600' : 'text-red-600'} font-medium">
-                    ${match.can_apply ? '&#x2705; Можно подавать' : '&#x274C; Рекомендуем подтянуть навыки'}
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-sm font-semibold ${match.can_apply ? 'text-success-600' : 'text-danger-600'}">
+                            ${match.can_apply ? '&#10003; Рекомендуем подавать' : '&#10007; Стоит подтянуть навыки'}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600">${match.recommendation}</p>
                 </div>
             </div>
-            <p class="text-sm text-gray-600 mb-4">${match.recommendation}</p>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <h4 class="text-sm font-medium text-green-700 mb-1">Совпадающие навыки (${match.matching_skills.length})</h4>
-                    <div class="flex flex-wrap gap-1">
-                        ${match.matching_skills.map(s => `<span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">${s}</span>`).join('') || '<span class="text-xs text-gray-400">нет</span>'}
+                    <h4 class="text-sm font-semibold text-success-700 mb-2 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Совпадающие (${match.matching_skills.length})
+                    </h4>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${match.matching_skills.map(s => {
+                            const v = (match.verified_matching || []).includes(s);
+                            return v
+                                ? `<span class="text-xs px-2.5 py-1 bg-success-50 text-success-700 rounded-lg font-medium ring-1 ring-success-200 inline-flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>${s}</span>`
+                                : `<span class="text-xs px-2.5 py-1 bg-success-50/50 text-success-600 rounded-lg font-medium">${s}</span>`;
+                        }).join('') || '<span class="text-xs text-gray-400">нет</span>'}
                     </div>
                 </div>
                 <div>
-                    <h4 class="text-sm font-medium text-red-700 mb-1">Недостающие навыки (${match.missing_skills.length})</h4>
-                    <div class="flex flex-wrap gap-1">
-                        ${match.missing_skills.map(s => `<span class="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded">${s}</span>`).join('') || '<span class="text-xs text-gray-400">нет</span>'}
+                    <h4 class="text-sm font-semibold text-danger-700 mb-2 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Нужно изучить (${match.missing_skills.length})
+                    </h4>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${match.missing_skills.map(s => `<span class="text-xs px-2.5 py-1 bg-danger-50 text-danger-700 rounded-lg font-medium">${s}</span>`).join('') || '<span class="text-xs text-gray-400">нет</span>'}
                     </div>
                 </div>
             </div>
             ${match.learning_path && match.learning_path.length ? `
-                <div class="mt-4">
-                    <h4 class="text-sm font-medium mb-2">План обучения:</h4>
-                    <ul class="text-sm text-gray-600 space-y-1">
-                        ${match.learning_path.map(l => `<li>&#x1F4DA; ${l}</li>`).join('')}
-                    </ul>
+                <div class="mt-6 pt-4 border-t">
+                    <h4 class="text-sm font-semibold mb-3 flex items-center gap-1">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        План обучения
+                    </h4>
+                    <div class="space-y-2">
+                        ${match.learning_path.map((l, i) => `
+                            <div class="flex items-start gap-3 text-sm text-gray-600">
+                                <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold shrink-0">${i + 1}</span>
+                                <span>${l}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             ` : ''}
         </div>`;
     }
 
-    async function addToFavorites(jobId) {
-        if (!currentUser) { alert('Выберите пользователя'); return; }
-        try {
-            await api('/analytics/favorites/', {
-                method: 'POST',
-                body: { user_id: currentUser.id, job_id: jobId },
-            });
-            alert('Добавлено в избранное!');
-        } catch(e) { alert('Ошибка: ' + JSON.stringify(e)); }
+    function openApplyModal() {
+        if (!requireAuth()) return;
+        const modal = document.getElementById('apply-modal');
+        document.getElementById('apply-job-info').innerHTML = `
+            <div class="font-semibold text-gray-900">${currentJob.title}</div>
+            <div class="text-sm text-gray-500">${currentJob.company} &#183; ${currentJob.location}</div>
+        `;
+        document.getElementById('cover-letter').value = '';
+        modal.classList.remove('hidden');
     }
 
-    async function applyToJob(jobId) {
-        if (!currentUser) { alert('Выберите пользователя'); return; }
-        const letter = prompt('Сопроводительное письмо (необязательно):') || '';
+    function closeApplyModal() {
+        document.getElementById('apply-modal').classList.add('hidden');
+    }
+
+    async function submitApplication(e) {
+        e.preventDefault();
+        const btn = document.getElementById('apply-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Отправка...';
         try {
             await api('/applications/', {
                 method: 'POST',
-                body: { job: jobId, cover_letter: letter, applicant_id: currentUser.id },
+                body: { job: parseInt(jobId), cover_letter: document.getElementById('cover-letter').value },
             });
-            alert('Заявка отправлена!');
+            closeApplyModal();
+            toast('Отклик успешно отправлен!');
         } catch(e) {
-            if (e.non_field_errors) alert(e.non_field_errors.join(', '));
-            else alert('Ошибка при отправке заявки');
+            if (e.non_field_errors) toast(e.non_field_errors.join(', '), 'error');
+            else toast('Вы уже откликались на эту вакансию', 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Отправить отклик';
+    }
+
+    async function addToFavorites(jobId) {
+        if (!requireAuth()) return;
+        try {
+            await api('/analytics/favorites/', { method: 'POST', body: { job_id: jobId } });
+            toast('Добавлено в избранное!');
+        } catch(e) {
+            toast('Уже в избранном', 'error');
         }
     }
 
-    function onUserChanged() { loadJob(); }
+    async function loadCompanyInfo(companyName) {
+        try {
+            const info = await api(`/jobs/company-info/?name=${encodeURIComponent(companyName)}`);
+            const el = document.getElementById('company-desc');
+            if (el) {
+                el.textContent = info.description || 'Описание не указано';
+                el.classList.toggle('italic', !info.description);
+                if (info.jobs_count > 1) {
+                    const badge = document.createElement('span');
+                    badge.className = 'ml-2 text-xs px-2 py-0.5 rounded-lg bg-primary-50 text-primary-700 ring-1 ring-primary-200 font-medium';
+                    badge.textContent = `${info.jobs_count} вакансий`;
+                    el.parentElement.querySelector('a').insertAdjacentElement('afterend', badge);
+                }
+            }
+        } catch(e) {
+            const el = document.getElementById('company-desc');
+            if (el) el.textContent = '';
+        }
+    }
+
     loadJob();
 </script>
 {% endblock %}

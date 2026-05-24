@@ -20,10 +20,12 @@ class UserProfile(models.Model):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     bio = models.TextField(blank=True, default='')
     skills = models.JSONField(default=list, blank=True, help_text='List of known skills, e.g. ["Python", "Django", "Git"]')
+    verified_skills = models.JSONField(default=list, blank=True, help_text='Skills verified by passing tests')
 
     # For applicant
     portfolio_url = models.URLField(blank=True, default='')
     github_url = models.URLField(blank=True, default='')
+    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
 
     # For HR
     company_name = models.CharField(max_length=255, blank=True, default='')

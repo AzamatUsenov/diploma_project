@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth.models import User
+from accounts.models import UserProfile
 from .models import Job, JobTag
 
 
@@ -19,19 +20,7 @@ class JobModelTest(APITestCase):
         self.assertEqual(str(job), 'Python Dev at TestCorp')
 
     def test_default_ordering(self):
-        """Jobs are ordered by -created_at (newest first)."""
-        job1 = Job.objects.create(
-            title='First', company='A', description='d',
-            requirements_text='r', posted_by=self.user,
-        )
-        job2 = Job.objects.create(
-            title='Second', company='B', description='d',
-            requirements_text='r', posted_by=self.user,
-        )
-        jobs = list(Job.objects.all())
-        # Both created in same instant, so verify ordering meta is set
         self.assertEqual(Job._meta.ordering, ['-created_at'])
-        self.assertEqual(len(jobs), 2)
 
     def test_default_values(self):
         job = Job.objects.create(
@@ -58,6 +47,8 @@ class JobAPITest(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(username='hr', password='pass123')
+        UserProfile.objects.create(user=self.user, role='hr')
+        self.client.force_authenticate(user=self.user)
         self.job1 = Job.objects.create(
             title='Junior Python Developer',
             company='AlphaCorp',
@@ -100,12 +91,12 @@ class JobAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Junior Python Developer')
         self.assertEqual(response.data['company'], 'AlphaCorp')
-        self.assertIn('description', response.data)  # detail has description
+        self.assertIn('description', response.data)
 
     def test_list_excludes_description(self):
         response = self.client.get('/api/jobs/')
         first_job = response.data['results'][0]
-        self.assertNotIn('description', first_job)  # list is lightweight
+        self.assertNotIn('description', first_job)
 
     def test_create_job(self):
         data = {
@@ -115,7 +106,6 @@ class JobAPITest(APITestCase):
             'location': 'Remote',
             'requirements_text': 'Python, Django',
             'level': 'mid',
-            'posted_by': self.user.id,
         }
         response = self.client.post('/api/jobs/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -155,7 +145,7 @@ class JobAPITest(APITestCase):
     def test_ordering_by_salary(self):
         response = self.client.get('/api/jobs/?ordering=-salary_max')
         results = response.data['results']
-        self.assertEqual(results[0]['company'], 'BetaCorp')  # higher salary first
+        self.assertEqual(results[0]['company'], 'BetaCorp')
 
     def test_inactive_jobs_excluded(self):
         self.job1.is_active = False
@@ -169,6 +159,10 @@ class JobAPITest(APITestCase):
 
 
 class JobTagAPITest(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='u', password='p')
+        self.client.force_authenticate(user=self.user)
 
     def test_list_tags(self):
         JobTag.objects.create(name='Python')

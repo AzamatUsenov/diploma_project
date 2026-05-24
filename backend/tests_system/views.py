@@ -1,11 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
-from .models import SkillTest, Question, TestResult, Answer
+from .models import SkillTest, Question, TestResult, Answer, CodeSubmission
 from .serializers import (
     SkillTestListSerializer,
     SkillTestDetailSerializer,
@@ -13,17 +12,37 @@ from .serializers import (
     TestResultSerializer,
     TestResultListSerializer,
     TestSubmitSerializer,
+    CodeSubmitSerializer,
+    CodeSubmissionSerializer,
 )
+from .code_runner import execute_code
+
+LANGUAGE_TO_SKILL = {
+    'python': 'Python',
+    'javascript': 'JavaScript',
+    'java': 'Java',
+    'react': 'React',
+}
+
+
+def _verify_skill_for_user(user, test):
+    skill_name = LANGUAGE_TO_SKILL.get(test.language)
+    if not skill_name:
+        return
+    profile = getattr(user, 'profile', None)
+    if not profile:
+        return
+    verified = profile.verified_skills or []
+    if skill_name not in verified:
+        verified.append(skill_name)
+        profile.verified_skills = verified
+        if skill_name not in (profile.skills or []):
+            profile.skills = (profile.skills or []) + [skill_name]
+        profile.save(update_fields=['verified_skills', 'skills'])
 
 
 class SkillTestViewSet(viewsets.ModelViewSet):
-    """
-    Skill tests management.
-    list:     GET /api/tests/          (lightweight with question count)
-    retrieve: GET /api/tests/{id}/     (full with nested questions)
-    submit:   POST /api/tests/{id}/submit/  (submit answers)
-    """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         return SkillTest.objects.annotate(
@@ -37,25 +56,12 @@ class SkillTestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='submit')
     def submit(self, request, pk=None):
-        """
-        Submit test answers.
-        POST /api/tests/{id}/submit/
-        Body: { "user_id": 1, "answers": [{"question_id": 1, "answer": "a"}, ...] }
-        """
         test = self.get_object()
         submit_serializer = TestSubmitSerializer(data=request.data)
         submit_serializer.is_valid(raise_exception=True)
 
-        user_id = request.data.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'user_id is required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        user = request.user
 
-        user = User.objects.get(pk=user_id)
-
-        # Check if already completed
         existing = TestResult.objects.filter(
             user=user, test=test, completed_at__isnull=False
         ).first()
@@ -65,7 +71,6 @@ class SkillTestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-        # Create result
         result = TestResult.objects.create(user=user, test=test)
 
         score = 0
@@ -97,6 +102,9 @@ class SkillTestViewSet(viewsets.ModelViewSet):
         result.completed_at = timezone.now()
         result.save()
 
+        if result.status == 'passed':
+            _verify_skill_for_user(user, test)
+
         return Response(
             TestResultSerializer(result).data,
             status=status.HTTP_201_CREATED,
@@ -104,26 +112,133 @@ class SkillTestViewSet(viewsets.ModelViewSet):
 
 
 class TestResultViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    View test results.
-    list:     GET /api/tests/results/           (all results)
-    retrieve: GET /api/tests/results/{id}/      (single result with answers)
-
-    Query params:
-      ?user_id=1  — filter by user
-    """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = TestResult.objects.select_related('test', 'user').all()
-
-        user_id = self.request.query_params.get('user_id')
-        if user_id:
-            qs = qs.filter(user_id=user_id)
-
-        return qs
+        return TestResult.objects.select_related('test', 'user').filter(
+            user=self.request.user
+        )
 
     def get_serializer_class(self):
         if self.action == 'list':
             return TestResultListSerializer
         return TestResultSerializer
+
+
+class CodeChallengeViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'], url_path='submit/(?P<question_id>[^/.]+)')
+    def submit_code(self, request, question_id=None):
+        try:
+            question = Question.objects.get(id=question_id, question_type='code')
+        except Question.DoesNotExist:
+            return Response(
+                {'detail': 'Code challenge not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = CodeSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_code = serializer.validated_data['code']
+
+        if not question.test_code:
+            return Response(
+                {'detail': 'No tests configured for this challenge'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = execute_code(user_code, question.test_code)
+
+        submission = CodeSubmission.objects.create(
+            user=request.user,
+            question=question,
+            code=user_code,
+            status=result['status'],
+            output=result['output'],
+            test_results=result['test_results'],
+            tests_passed=result['tests_passed'],
+            tests_total=result['tests_total'],
+            execution_time_ms=result['execution_time_ms'],
+            error_message=result['error_message'],
+        )
+
+        response_data = CodeSubmissionSerializer(submission).data
+
+        if result['status'] == 'passed':
+            self._update_test_result(request.user, question)
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    def _update_test_result(self, user, question):
+        test = question.test
+        all_questions = test.questions.filter(question_type='code')
+        total = all_questions.count()
+
+        passed_questions = 0
+        for q in all_questions:
+            has_passed = CodeSubmission.objects.filter(
+                user=user, question=q, status='passed'
+            ).exists()
+            if has_passed:
+                passed_questions += 1
+
+        score = passed_questions * 10
+        max_score = total * 10
+        test_status = 'passed' if passed_questions == total else 'failed'
+
+        result, _ = TestResult.objects.update_or_create(
+            user=user,
+            test=test,
+            defaults={
+                'score': score,
+                'max_score': max_score,
+                'status': test_status,
+                'completed_at': timezone.now() if test_status == 'passed' else None,
+            },
+        )
+
+        if test_status == 'passed':
+            _verify_skill_for_user(user, test)
+
+    @action(detail=False, methods=['get'], url_path='history/(?P<question_id>[^/.]+)')
+    def history(self, request, question_id=None):
+        submissions = CodeSubmission.objects.filter(
+            user=request.user,
+            question_id=question_id,
+        )[:10]
+        return Response(
+            CodeSubmissionSerializer(submissions, many=True).data,
+        )
+
+    @action(detail=False, methods=['get'], url_path='progress/(?P<test_id>[^/.]+)')
+    def progress(self, request, test_id=None):
+        try:
+            test = SkillTest.objects.get(id=test_id)
+        except SkillTest.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        questions = test.questions.filter(question_type='code')
+        progress = []
+        for q in questions:
+            best = CodeSubmission.objects.filter(
+                user=request.user, question=q
+            ).order_by('-tests_passed').first()
+            progress.append({
+                'question_id': q.id,
+                'question_text': q.text[:80],
+                'order': q.order,
+                'solved': best.status == 'passed' if best else False,
+                'attempts': CodeSubmission.objects.filter(user=request.user, question=q).count(),
+                'best_score': f"{best.tests_passed}/{best.tests_total}" if best else "0/0",
+            })
+
+        total_result = TestResult.objects.filter(user=request.user, test=test).first()
+        return Response({
+            'test_id': test.id,
+            'test_title': test.title,
+            'tasks': progress,
+            'solved_count': sum(1 for p in progress if p['solved']),
+            'total_count': len(progress),
+            'completed': total_result.status == 'passed' if total_result else False,
+        })

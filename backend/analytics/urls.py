@@ -10,4 +10,5 @@ urlpatterns = [
     path('analyze/<int:job_id>/', views.analyze_job_view, name='analyze-job'),
     path('match/', views.match_view, name='match'),
     path('compare/', views.compare_view, name='compare'),
+    path('export/<int:job_id>/pdf/', views.export_job_pdf, name='export-job-pdf'),
 ]

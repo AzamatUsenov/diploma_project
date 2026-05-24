@@ -16,11 +16,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'id', 'user', 'role', 'level', 'avatar', 'bio', 'skills',
-            'portfolio_url', 'github_url',
+            'verified_skills', 'portfolio_url', 'github_url', 'resume',
             'company_name', 'company_description',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'verified_skills']
 
 
 class RegisterSerializer(serializers.Serializer):

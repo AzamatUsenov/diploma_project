@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}О платформе — JobPlatform{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="text-center py-12 fade-in">
+    <span class="inline-block text-xs font-semibold uppercase tracking-widest text-primary-600 bg-primary-50 px-3 py-1 rounded-full mb-4">О платформе</span>
+    <h1 class="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
+        Меняем правила <span class="gradient-text">поиска работы</span>
+    </h1>
+    <p class="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+        JobPlatform — это веб-платформа, которая помогает молодым специалистам находить честные вакансии, а работодателям — публиковать реалистичные требования.
+    </p>
+</div>
+
+<!-- Problem -->
+<div class="max-w-4xl mx-auto mb-16">
+    <div class="card p-8 md:p-10 slide-up">
+        <div class="flex items-start gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-danger-50 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-danger-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Проблема</h2>
+                <p class="text-gray-600 leading-relaxed">На современном рынке труда Junior-вакансии часто содержат требования для Middle и Senior специалистов: 2-3 года опыта, знание 10+ технологий, участие в крупных проектах. Это создаёт непреодолимый барьер для выпускников и начинающих разработчиков.</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-danger-50/50 rounded-xl p-4 text-center">
+                <div class="text-3xl font-black text-danger-600 mb-1">73%</div>
+                <div class="text-sm text-gray-600">Junior-вакансий с завышенными требованиями</div>
+            </div>
+            <div class="bg-warning-50/50 rounded-xl p-4 text-center">
+                <div class="text-3xl font-black text-warning-600 mb-1">2.4 года</div>
+                <div class="text-sm text-gray-600">Средний требуемый опыт на "Junior" позиции</div>
+            </div>
+            <div class="bg-primary-50/50 rounded-xl p-4 text-center">
+                <div class="text-3xl font-black text-primary-600 mb-1">8.2</div>
+                <div class="text-sm text-gray-600">Среднее количество технологий в требованиях</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Solution -->
+<div class="max-w-4xl mx-auto mb-16">
+    <div class="text-center mb-10">
+        <span class="inline-block text-xs font-semibold uppercase tracking-widest text-success-600 bg-success-50 px-3 py-1 rounded-full mb-3">Решение</span>
+        <h2 class="text-3xl font-bold text-gray-900">Что делает JobPlatform</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="card p-6 slide-up" style="animation-delay:0.1s">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                </div>
+                <h3 class="font-bold text-gray-900">Honesty Score</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">Каждая вакансия получает оценку честности от 0 до 100. Алгоритм анализирует опыт, количество технологий, сложность требований.</p>
+        </div>
+        <div class="card p-6 slide-up" style="animation-delay:0.15s">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                </div>
+                <h3 class="font-bold text-gray-900">Матчинг навыков</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">Сопоставляем ваши навыки с требованиями вакансии. Видите процент совпадения и список того, что стоит изучить.</p>
+        </div>
+        <div class="card p-6 slide-up" style="animation-delay:0.2s">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                </div>
+                <h3 class="font-bold text-gray-900">Тесты навыков</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">Подтвердите знания через quiz и code challenges по Python, JavaScript, React и другим технологиям.</p>
+        </div>
+        <div class="card p-6 slide-up" style="animation-delay:0.25s">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h3 class="font-bold text-gray-900">Сравнение вакансий</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">Сравнивайте до 4 вакансий по зарплате, честности, навыкам и получайте рекомендацию лучшего варианта.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tech Stack -->
+<div class="max-w-4xl mx-auto mb-16">
+    <div class="text-center mb-10">
+        <span class="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-3">Технологии</span>
+        <h2 class="text-3xl font-bold text-gray-900">Технологический стек</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.05s">
+            <div class="text-3xl mb-2">&#x1F40D;</div>
+            <div class="font-bold text-gray-900">Python 3.9+</div>
+            <div class="text-xs text-gray-500">Язык программирования</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.1s">
+            <div class="text-3xl mb-2">&#x1F3AF;</div>
+            <div class="font-bold text-gray-900">Django 4</div>
+            <div class="text-xs text-gray-500">Веб-фреймворк</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.15s">
+            <div class="text-3xl mb-2">&#x26A1;</div>
+            <div class="font-bold text-gray-900">DRF</div>
+            <div class="text-xs text-gray-500">REST API Framework</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.2s">
+            <div class="text-3xl mb-2">&#x1F418;</div>
+            <div class="font-bold text-gray-900">PostgreSQL</div>
+            <div class="text-xs text-gray-500">База данных</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.25s">
+            <div class="text-3xl mb-2">&#x1F3A8;</div>
+            <div class="font-bold text-gray-900">Tailwind CSS</div>
+            <div class="text-xs text-gray-500">UI Framework</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.3s">
+            <div class="text-3xl mb-2">&#x1F4DC;</div>
+            <div class="font-bold text-gray-900">Swagger</div>
+            <div class="text-xs text-gray-500">API Документация</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.35s">
+            <div class="text-3xl mb-2">&#x1F512;</div>
+            <div class="font-bold text-gray-900">JWT</div>
+            <div class="text-xs text-gray-500">Аутентификация</div>
+        </div>
+        <div class="card-static p-5 text-center slide-up" style="animation-delay:0.4s">
+            <div class="text-3xl mb-2">&#x1F433;</div>
+            <div class="font-bold text-gray-900">Docker</div>
+            <div class="text-xs text-gray-500">Контейнеризация</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modules -->
+<div class="max-w-4xl mx-auto mb-16">
+    <div class="text-center mb-10">
+        <span class="inline-block text-xs font-semibold uppercase tracking-widest text-warning-600 bg-warning-50 px-3 py-1 rounded-full mb-3">Архитектура</span>
+        <h2 class="text-3xl font-bold text-gray-900">5 модулей системы</h2>
+    </div>
+    <div class="space-y-3">
+        <div class="card p-5 flex items-center gap-4 slide-up" style="animation-delay:0.1s">
+            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="font-bold text-gray-900">accounts</div>
+                <div class="text-sm text-gray-500">Регистрация, аутентификация, профили. Роли: соискатель и HR. Навыки, портфолио, GitHub.</div>
+            </div>
+        </div>
+        <div class="card p-5 flex items-center gap-4 slide-up" style="animation-delay:0.15s">
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="font-bold text-gray-900">jobs</div>
+                <div class="text-sm text-gray-500">Публикация вакансий, фильтрация, поиск, теги. Поля анализа: detected_level, honesty_score.</div>
+            </div>
+        </div>
+        <div class="card p-5 flex items-center gap-4 slide-up" style="animation-delay:0.2s">
+            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="font-bold text-gray-900">analytics</div>
+                <div class="text-sm text-gray-500">Анализ вакансий, матчинг навыков, сравнение вакансий, избранное. Ядро платформы.</div>
+            </div>
+        </div>
+        <div class="card p-5 flex items-center gap-4 slide-up" style="animation-delay:0.25s">
+            <div class="w-12 h-12 rounded-xl bg-warning-100 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="font-bold text-gray-900">tests_system</div>
+                <div class="text-sm text-gray-500">Quiz и code challenges по Python, JS, React, Java. Оценка и сохранение результатов.</div>
+            </div>
+        </div>
+        <div class="card p-5 flex items-center gap-4 slide-up" style="animation-delay:0.3s">
+            <div class="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="flex-1">
+                <div class="font-bold text-gray-900">applications</div>
+                <div class="text-sm text-gray-500">Отклики на вакансии, статусы (pending/viewed/accepted/rejected), сообщения.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="max-w-4xl mx-auto mb-8">
+    <div class="card-static p-8 text-center bg-gradient-to-br from-gray-50 to-primary-50/30 border-primary-100">
+        <h3 class="text-2xl font-bold text-gray-900 mb-3">Попробуйте прямо сейчас</h3>
+        <p class="text-gray-500 mb-6">Бесплатная регистрация, мгновенный доступ к аналитике вакансий</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-3">
+            <a href="/register/" class="btn-primary !px-8 !py-3">Создать аккаунт</a>
+            <a href="/api/docs/" class="btn-secondary !px-8 !py-3">API Documentation</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

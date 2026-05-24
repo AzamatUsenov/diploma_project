@@ -1,9 +1,11 @@
+import io
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes as perm_classes
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from django.contrib.auth.models import User
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from drf_spectacular.utils import extend_schema
 from jobs.models import Job
 from accounts.models import UserProfile
@@ -22,30 +24,22 @@ from .comparison import compare_jobs
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
-    """
-    Favorites (wishlist) management.
-    list:     GET /api/analytics/favorites/?user_id=1
-    create:   POST /api/analytics/favorites/   (body: user_id, job_id)
-    delete:   DELETE /api/analytics/favorites/{id}/
-    """
     serializer_class = FavoriteSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Favorite.objects.select_related('job', 'user').all()
-        user_id = self.request.query_params.get('user_id')
-        if user_id:
-            qs = qs.filter(user_id=user_id)
-        return qs
+        return Favorite.objects.select_related('job', 'user').filter(
+            user=self.request.user
+        )
 
     def create(self, request):
         serializer = FavoriteCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = get_object_or_404(User, pk=serializer.validated_data['user_id'])
         job = get_object_or_404(Job, pk=serializer.validated_data['job_id'])
-
-        favorite, created = Favorite.objects.get_or_create(user=user, job=job)
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user, job=job,
+        )
         if not created:
             return Response(
                 {'detail': 'Already in favorites'},
@@ -65,18 +59,11 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     tags=['analytics'],
 )
 @api_view(['GET'])
+@perm_classes([IsAuthenticatedOrReadOnly])
 def analyze_job_view(request, job_id):
-    """
-    Analyze a single job posting.
-    GET /api/analytics/analyze/{job_id}/
-
-    Returns parsed skills, detected level, honesty score, overqualification details.
-    Also saves analysis results back to the Job model.
-    """
     job = get_object_or_404(Job, pk=job_id)
     analysis = analyze_job(job)
 
-    # Save results to job
     job.parsed_skills = analysis['parsed_skills']
     job.detected_level = analysis['detected_level']
     job.is_overqualified = analysis['is_overqualified']
@@ -88,27 +75,19 @@ def analyze_job_view(request, job_id):
 
 @extend_schema(
     summary='Матчинг пользователя и вакансии',
-    description='Рассчитывает процент совпадения навыков пользователя с требованиями вакансии. '
-                'Возвращает совпадающие/недостающие навыки, рекомендации и план обучения.',
+    description='Рассчитывает процент совпадения навыков пользователя с требованиями вакансии.',
     request=MatchRequestSerializer,
     responses={200: MatchResponseSerializer},
     tags=['analytics'],
 )
 @api_view(['POST'])
+@perm_classes([IsAuthenticated])
 def match_view(request):
-    """
-    Calculate match score for user + job.
-    POST /api/analytics/match/
-    Body: { "user_id": 1, "job_id": 1 }
-
-    Returns match score, matching/missing skills, recommendation, learning path.
-    """
     serializer = MatchRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    user = get_object_or_404(User, pk=serializer.validated_data['user_id'])
     job = get_object_or_404(Job, pk=serializer.validated_data['job_id'])
-    profile = get_object_or_404(UserProfile, user=user)
+    profile = request.user.profile
 
     result = generate_recommendation(profile, job)
     return Response(result)
@@ -116,21 +95,14 @@ def match_view(request):
 
 @extend_schema(
     summary='Сравнение вакансий',
-    description='Сравнивает 2-4 вакансии по зарплате, честности, навыкам, обучению. '
-                'Если передан user_id — добавляет персонализированный матч-скор и вердикт.',
+    description='Сравнивает 2-4 вакансии по зарплате, честности, навыкам, обучению.',
     request=CompareRequestSerializer,
     responses={200: dict},
     tags=['analytics'],
 )
 @api_view(['POST'])
+@perm_classes([IsAuthenticated])
 def compare_view(request):
-    """
-    Compare 2-4 jobs side by side.
-    POST /api/analytics/compare/
-    Body: { "job_ids": [1, 2, 3], "user_id": 1 }  (user_id optional)
-
-    Returns detailed comparison with scores, common/unique skills, and verdict.
-    """
     serializer = CompareRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -143,11 +115,70 @@ def compare_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user_profile = None
-    user_id = serializer.validated_data.get('user_id')
-    if user_id:
-        user = get_object_or_404(User, pk=user_id)
-        user_profile = get_object_or_404(UserProfile, user=user)
-
+    user_profile = request.user.profile
     result = compare_jobs(jobs, user_profile)
     return Response(result)
+
+
+@api_view(['GET'])
+@perm_classes([IsAuthenticated])
+def export_job_pdf(request, job_id):
+    from applications.models import Application
+    from tests_system.models import TestResult
+
+    user = request.user
+    if not hasattr(user, 'profile') or user.profile.role != 'hr':
+        return Response({'detail': 'HR only'}, status=status.HTTP_403_FORBIDDEN)
+
+    job = get_object_or_404(Job, pk=job_id, posted_by=user)
+    apps = Application.objects.filter(job=job).select_related(
+        'applicant', 'applicant__profile'
+    ).order_by('-created_at')
+
+    applicant_data = []
+    for app in apps:
+        profile = getattr(app.applicant, 'profile', None)
+        test_results = TestResult.objects.filter(
+            user=app.applicant, completed_at__isnull=False
+        ).select_related('test')
+        applicant_data.append({
+            'username': app.applicant.username,
+            'full_name': app.applicant.get_full_name() or app.applicant.username,
+            'email': app.applicant.email,
+            'status': app.get_status_display(),
+            'status_raw': app.status,
+            'cover_letter': app.cover_letter[:200] if app.cover_letter else '',
+            'skills': profile.skills if profile else [],
+            'level': profile.get_level_display() if profile else '',
+            'applied_at': app.created_at.strftime('%d.%m.%Y'),
+            'tests': [
+                {
+                    'title': tr.test.title,
+                    'score': tr.score,
+                    'max_score': tr.max_score,
+                    'status': tr.status,
+                }
+                for tr in test_results
+            ],
+        })
+
+    analysis = analyze_job(job)
+
+    html = render_to_string('analytics/job_report.html', {
+        'job': job,
+        'analysis': analysis,
+        'applicants': applicant_data,
+        'total': apps.count(),
+        'accepted': apps.filter(status='accepted').count(),
+        'rejected': apps.filter(status='rejected').count(),
+        'pending': apps.filter(status='pending').count(),
+    })
+
+    from xhtml2pdf import pisa
+    buffer = io.BytesIO()
+    pisa.CreatePDF(io.StringIO(html), dest=buffer, encoding='utf-8')
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="report_{job.id}.pdf"'
+    return response

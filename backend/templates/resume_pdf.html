@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1f2937; line-height: 1.5; }
+        h1 { font-size: 24px; margin: 0 0 4px 0; color: #111827; }
+        h2 { font-size: 14px; color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 4px; margin: 20px 0 10px 0; }
+        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+        .header { margin-bottom: 20px; }
+        .contact { font-size: 11px; color: #4b5563; margin-bottom: 4px; }
+        .skills-list { margin: 0; padding: 0; }
+        .skill-badge { display: inline-block; background: #eef2ff; color: #4338ca; padding: 3px 10px; border-radius: 4px; margin: 2px 4px 2px 0; font-size: 10px; font-weight: bold; }
+        .skill-verified { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .section-content { margin-left: 0; }
+        .bio { color: #374151; margin-bottom: 10px; }
+        .level-badge { display: inline-block; background: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .link { color: #4f46e5; text-decoration: none; }
+        .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #9ca3af; text-align: center; }
+        .verified-note { font-size: 9px; color: #059669; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ user.first_name }} {{ user.last_name }}{% if not user.first_name %}{{ user.username }}{% endif %}</h1>
+        <div class="subtitle">
+            <span class="level-badge">{{ profile.level }}</span>
+            {% if profile.role == 'applicant' %}Software Developer{% else %}HR Manager{% endif %}
+        </div>
+        <div class="contact">{{ user.email }}</div>
+        {% if profile.portfolio_url %}<div class="contact">Portfolio: <a class="link" href="{{ profile.portfolio_url }}">{{ profile.portfolio_url }}</a></div>{% endif %}
+        {% if profile.github_url %}<div class="contact">GitHub: <a class="link" href="{{ profile.github_url }}">{{ profile.github_url }}</a></div>{% endif %}
+    </div>
+
+    {% if profile.bio %}
+    <h2>О себе</h2>
+    <div class="section-content">
+        <p class="bio">{{ profile.bio }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.skills %}
+    <h2>Навыки</h2>
+    <div class="section-content skills-list">
+        {% for skill in profile.skills %}
+            {% if skill in profile.verified_skills %}
+                <span class="skill-badge skill-verified">&#10003; {{ skill }}</span>
+            {% else %}
+                <span class="skill-badge">{{ skill }}</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% if profile.verified_skills %}
+    <div class="verified-note">&#10003; = подтверждено тестированием на платформе JobPlatform</div>
+    {% endif %}
+    {% endif %}
+
+    {% if profile.verified_skills %}
+    <h2>Подтверждённые навыки</h2>
+    <div class="section-content skills-list">
+        {% for skill in profile.verified_skills %}
+            <span class="skill-badge skill-verified">&#10003; {{ skill }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Резюме сгенерировано на JobPlatform
+    </div>
+</body>
+</html>

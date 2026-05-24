@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register('results', views.TestResultViewSet, basename='testresult')
+router.register('code', views.CodeChallengeViewSet, basename='code-challenge')
 router.register('', views.SkillTestViewSet, basename='skilltest')
 
 urlpatterns = [

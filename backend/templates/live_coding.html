@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+{% block title %}Live Coding — JobPlatform{% endblock %}
+
+{% block content %}
+<div id="live-page" class="max-w-7xl mx-auto space-y-6">
+    <!-- Landing: create or join -->
+    <div id="live-landing" class="slide-up">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">Live Coding</h1>
+            <p class="text-gray-500">Сессия программирования в реальном времени</p>
+        </div>
+        <div id="panels-container" class="flex flex-wrap justify-center gap-6 max-w-4xl mx-auto">
+            <!-- HR: Create session -->
+            <div id="create-panel" class="card p-6 w-full max-w-md" style="display:none;">
+                <div class="text-center mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    </div>
+                    <h2 class="text-lg font-bold">Создать сессию</h2>
+                    <p class="text-sm text-gray-500 mt-1">Выберите задачи и пригласите кандидата</p>
+                </div>
+                <form onsubmit="createSession(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Название</label>
+                        <input type="text" name="title" required class="input-field" placeholder="Backend интервью — Python">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Лимит времени (мин)</label>
+                        <input type="number" name="time_limit" value="30" min="10" max="120" class="input-field">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Задачи</label>
+                        <div id="task-picker" class="space-y-2 max-h-60 overflow-y-auto border rounded-xl p-2"></div>
+                        <p class="text-xs text-gray-400 mt-1">Рекомендуем 2-3 задачи для 30-минутной сессии</p>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">Создать сессию</button>
+                </form>
+            </div>
+
+            <!-- Candidate: Join session -->
+            <div id="join-panel" class="card p-6 w-full max-w-md">
+                <div class="text-center mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-success-50 dark:bg-success-900/30 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h2 class="text-lg font-bold">Присоединиться</h2>
+                    <p class="text-sm text-gray-500 mt-1">Введите код приглашения от HR</p>
+                </div>
+                <form onsubmit="joinSession(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Код приглашения</label>
+                        <input type="text" name="invite_code" required class="input-field text-center text-lg font-mono tracking-widest" placeholder="ABCD1234" maxlength="8">
+                    </div>
+                    <button type="submit" class="btn-primary w-full">Войти в сессию</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- My sessions list -->
+        <div id="my-sessions" class="mt-8 hidden">
+            <h2 class="text-lg font-semibold mb-3">Мои сессии</h2>
+            <div id="sessions-list" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Active session view -->
+    <div id="live-session" class="hidden">
+        <!-- Session header -->
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <button onclick="leaveSession()" class="btn-ghost !p-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <div>
+                    <h1 class="text-lg font-bold" id="session-title"></h1>
+                    <div class="flex items-center gap-2 text-sm text-gray-500">
+                        <span id="session-status-badge" class="text-xs px-2 py-0.5 rounded-full font-medium bg-success-50 text-success-700">Live</span>
+                        <span id="session-timer" class="font-mono"></span>
+                        <span id="session-invite" class="font-mono text-primary-600"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleScreenShare()" id="btn-screen-share" class="hidden btn-secondary text-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span id="screen-share-label">Показать экран</span>
+                </button>
+                <button onclick="extendTime()" id="btn-extend-time" class="hidden btn-secondary text-sm">
+                    +15 мин
+                </button>
+                <button onclick="endSession()" id="btn-end-session" class="hidden btn-secondary !text-danger-600 !border-danger-200 hover:!bg-danger-50 text-sm">
+                    Завершить
+                </button>
+            </div>
+        </div>
+
+        <!-- Main layout: code + sidebar -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4" style="height: calc(100vh - 180px);">
+            <!-- Code editor (3 cols) -->
+            <div class="lg:col-span-3 flex flex-col">
+                <!-- Task tabs -->
+                <div class="flex gap-1 mb-2 overflow-x-auto" id="task-tabs"></div>
+                <!-- Task description -->
+                <div id="task-description" class="card p-3 mb-2 text-sm max-h-24 overflow-y-auto"></div>
+                <!-- Editor -->
+                <div class="flex-1 relative">
+                    <textarea id="code-editor" class="w-full h-full font-mono text-sm p-4 bg-gray-900 text-green-400 rounded-xl border border-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" spellcheck="false" placeholder="# Пишите код здесь..."></textarea>
+                    <div id="hr-cursor-indicator" class="hidden absolute top-2 right-2 text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-lg">
+                        HR наблюдает
+                    </div>
+                </div>
+                <!-- Action bar -->
+                <div class="flex items-center justify-between mt-2">
+                    <div class="flex gap-2">
+                        <button onclick="runCode()" class="btn-primary text-sm" id="btn-run">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                            Запустить
+                        </button>
+                        <button onclick="submitCode()" class="btn-secondary text-sm" id="btn-submit">Отправить решение</button>
+                    </div>
+                    <div id="run-result" class="text-sm font-medium"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar (1 col) -->
+            <div class="flex flex-col gap-3 overflow-y-auto">
+                <!-- Test results -->
+                <div class="card p-4">
+                    <h3 class="text-sm font-semibold mb-2">Результаты</h3>
+                    <div id="test-results-panel" class="space-y-1 text-xs"></div>
+                </div>
+                <!-- Chat -->
+                <div class="card p-4 flex-1 flex flex-col">
+                    <h3 class="text-sm font-semibold mb-2">Чат</h3>
+                    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 text-xs mb-2 max-h-48"></div>
+                    <form onsubmit="sendChat(event)" class="flex gap-1">
+                        <input type="text" id="chat-input" class="input-field !text-xs !py-1.5" placeholder="Сообщение...">
+                        <button type="submit" class="btn-primary !text-xs !py-1.5 !px-3">OK</button>
+                    </form>
+                </div>
+                <!-- Progress -->
+                <div class="card p-4">
+                    <h3 class="text-sm font-semibold mb-2">Прогресс</h3>
+                    <div id="progress-panel" class="space-y-1"></div>
+                </div>
+                <!-- Screen share viewer -->
+                <div id="screen-share-container" class="card p-2 hidden">
+                    <h3 class="text-sm font-semibold mb-1 flex items-center justify-between">
+                        <span>Экран</span>
+                        <button onclick="toggleScreenFullscreen()" class="text-xs text-primary-600 hover:underline">На весь экран</button>
+                    </h3>
+                    <video id="remote-screen" autoplay playsinline class="w-full rounded-lg bg-black" style="max-height: 200px;"></video>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen screen share modal -->
+<div id="screen-fullscreen-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+    <button onclick="closeScreenFullscreen()" class="absolute top-4 right-4 text-white bg-white/20 rounded-full p-2 hover:bg-white/30">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <video id="remote-screen-fullscreen" autoplay playsinline class="max-w-full max-h-full rounded-lg"></video>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+if (!isLoggedIn()) { window.location = '/login/'; }
+
+let ws = null;
+let currentSession = null;
+let sessionTasks = [];
+let currentTaskIndex = 0;
+let timerInterval = null;
+let isHR = false;
+
+async function init() {
+    let profile = getProfile();
+    if (!profile) {
+        try {
+            profile = await api('/accounts/profiles/me/');
+            localStorage.setItem('profile', JSON.stringify(profile));
+        } catch(e) {}
+    }
+    isHR = profile && profile.role === 'hr';
+
+    if (isHR) {
+        document.getElementById('create-panel').style.display = '';
+        loadCodeQuestions();
+    }
+
+    loadMySessions();
+
+    const params = new URLSearchParams(window.location.search);
+    const inviteCode = params.get('code');
+    if (inviteCode && !isHR) {
+        document.querySelector('input[name="invite_code"]').value = inviteCode;
+        try {
+            const session = await api('/live/sessions/join/', {
+                method: 'POST',
+                body: { invite_code: inviteCode }
+            });
+            enterSession(session);
+        } catch(e) {
+            toast('Не удалось войти по ссылке. Попробуйте ввести код вручную.', 'error');
+        }
+    }
+}
+
+async function loadCodeQuestions() {
+    try {
+        const tasks = await api('/live/sessions/available-tasks/');
+        const picker = document.getElementById('task-picker');
+        let html = '';
+        for (const q of tasks) {
+            html += `
+                <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <input type="checkbox" name="questions" value="${q.id}" class="rounded text-primary-600">
+                    <span class="text-sm flex-1">${q.text.substring(0, 55)}...</span>
+                    <span class="text-xs text-gray-400">${q.language}</span>
+                </label>`;
+        }
+        picker.innerHTML = html || '<p class="text-sm text-gray-400">Нет доступных code-задач. Сначала загрузите тесты: <code>python manage.py seed_data</code></p>';
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+async function createSession(e) {
+    e.preventDefault();
+    const form = e.target;
+    const checked = [...form.querySelectorAll('input[name="questions"]:checked')];
+    if (checked.length === 0) { toast('Выберите хотя бы одну задачу', 'error'); return; }
+
+    try {
+        const session = await api('/live/sessions/', {
+            method: 'POST',
+            body: {
+                title: form.title.value,
+                time_limit_minutes: parseInt(form.time_limit.value),
+                question_ids: checked.map(c => parseInt(c.value)),
+            }
+        });
+        toast('Сессия создана! Код: ' + session.invite_code);
+        enterSession(session);
+    } catch(e) {
+        toast('Ошибка создания сессии', 'error');
+    }
+}
+
+async function joinSession(e) {
+    e.preventDefault();
+    const code = e.target.invite_code.value.trim().toUpperCase();
+    try {
+        const session = await api('/live/sessions/join/', {
+            method: 'POST',
+            body: { invite_code: code }
+        });
+        enterSession(session);
+    } catch(e) {
+        toast('Неверный код или сессия недоступна', 'error');
+    }
+}
+
+function enterSession(session) {
+    currentSession = session;
+    sessionTasks = session.questions || [];
+    currentTaskIndex = session.current_question_index || 0;
+
+    document.getElementById('live-landing').classList.add('hidden');
+    document.getElementById('live-session').classList.remove('hidden');
+    document.getElementById('session-title').textContent = session.title;
+    document.getElementById('session-invite').textContent = 'Код: ' + session.invite_code;
+
+    document.getElementById('btn-screen-share').classList.remove('hidden');
+
+    if (isHR) {
+        document.getElementById('btn-end-session').classList.remove('hidden');
+        document.getElementById('btn-extend-time').classList.remove('hidden');
+        document.getElementById('code-editor').readOnly = true;
+        document.getElementById('code-editor').classList.add('opacity-90');
+        document.getElementById('btn-run').classList.add('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
+        document.getElementById('hr-cursor-indicator').classList.add('hidden');
+    } else {
+        document.getElementById('hr-cursor-indicator').classList.remove('hidden');
+    }
+
+    renderTaskTabs();
+    switchTask(currentTaskIndex);
+    startTimer(session.time_limit_minutes);
+    connectWebSocket(session.id);
+}
+
+function renderTaskTabs() {
+    const tabs = document.getElementById('task-tabs');
+    tabs.innerHTML = sessionTasks.map((t, i) => `
+        <button onclick="switchTask(${i})" class="task-tab px-3 py-1.5 rounded-lg text-xs font-medium transition
+            ${i === currentTaskIndex ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200'}">
+            Задача ${i + 1}
+        </button>
+    `).join('');
+}
+
+function switchTask(index) {
+    currentTaskIndex = index;
+    const task = sessionTasks[index];
+    if (!task) return;
+
+    document.getElementById('task-description').innerHTML = `<p class="text-gray-700 dark:text-gray-300">${task.text}</p>`;
+    document.getElementById('code-editor').value = task.code_template || '';
+    renderTaskTabs();
+
+    if (ws && !isHR) {
+        ws.send(JSON.stringify({ type: 'switch_task', index }));
+    }
+}
+
+function startTimer(minutes) {
+    let seconds = minutes * 60;
+    const el = document.getElementById('session-timer');
+    timerInterval = setInterval(() => {
+        if (seconds <= 0) { clearInterval(timerInterval); endSession(); return; }
+        seconds--;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        if (seconds < 60) el.classList.add('text-danger-600');
+    }, 1000);
+}
+
+function connectWebSocket(sessionId) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const token = localStorage.getItem('access');
+    ws = new WebSocket(`${proto}//${window.location.host}/ws/live/${sessionId}/?token=${token}`);
+
+    ws.onopen = () => console.log('WS connected');
+
+    ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+
+        if (data.type === 'code_update' && isHR) {
+            document.getElementById('code-editor').value = data.code;
+        }
+        if (data.type === 'code_update' && !isHR) {
+            // ignore own code reflected back
+        }
+        if (data.type === 'switch_task') {
+            currentTaskIndex = data.index;
+            switchTask(data.index);
+        }
+        if (data.type === 'run_result') {
+            displayResult(data);
+        }
+        if (data.type === 'chat_message') {
+            appendChat(data.sender, data.message);
+        }
+        if (data.type === 'extend_time') {
+            toast(`Время продлено на ${data.added} мин (всего: ${data.total_minutes} мин)`);
+            // Reset timer with new total, estimate remaining
+            if (timerInterval) { clearInterval(timerInterval); }
+            startTimer(data.total_minutes);
+        }
+        if (data.type === 'session_state') {
+            if (data.code && isHR) {
+                document.getElementById('code-editor').value = data.code;
+            }
+        }
+        if (data.type === 'webrtc_offer') {
+            handleOffer(data.payload);
+        }
+        if (data.type === 'webrtc_answer') {
+            handleAnswer(data.payload);
+        }
+        if (data.type === 'webrtc_ice') {
+            handleIceCandidate(data.payload);
+        }
+    };
+
+    ws.onclose = () => console.log('WS disconnected');
+
+    if (!isHR) {
+        const editor = document.getElementById('code-editor');
+        let debounce = null;
+        editor.addEventListener('input', () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'code_update', code: editor.value }));
+                }
+            }, 150);
+        });
+    }
+}
+
+async function runCode() {
+    const code = document.getElementById('code-editor').value;
+    const task = sessionTasks[currentTaskIndex];
+    if (!task) return;
+
+    document.getElementById('run-result').innerHTML = '<span class="text-gray-400">Выполняется...</span>';
+
+    try {
+        const result = await api(`/live/sessions/${currentSession.id}/submit-task/`, {
+            method: 'POST',
+            body: { code, question_id: task.id }
+        });
+
+        displayResult(result);
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'run_result',
+                status: result.status,
+                tests_passed: result.tests_passed,
+                tests_total: result.tests_total,
+                output: result.output,
+            }));
+        }
+    } catch(e) {
+        document.getElementById('run-result').innerHTML = '<span class="text-danger-600">Ошибка выполнения</span>';
+    }
+}
+
+function submitCode() {
+    runCode();
+}
+
+function displayResult(result) {
+    const el = document.getElementById('run-result');
+    const passed = result.status === 'passed';
+    el.innerHTML = `<span class="${passed ? 'text-success-600' : 'text-danger-600'}">${result.tests_passed}/${result.tests_total} тестов</span>`;
+
+    const panel = document.getElementById('test-results-panel');
+    if (result.test_results) {
+        panel.innerHTML = result.test_results.map(t => `
+            <div class="flex items-center gap-1.5 ${t.passed ? 'text-success-600' : 'text-danger-600'}">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${t.passed ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'}"/></svg>
+                <span>${t.name || 'Test'}</span>
+            </div>
+        `).join('');
+    } else {
+        panel.innerHTML = `<div class="${passed ? 'text-success-600' : 'text-danger-600'}">${result.tests_passed}/${result.tests_total}</div>`;
+    }
+
+    updateProgress();
+}
+
+function updateProgress() {
+    const panel = document.getElementById('progress-panel');
+    panel.innerHTML = sessionTasks.map((t, i) => `
+        <div class="flex items-center gap-2 text-xs">
+            <div class="w-2 h-2 rounded-full ${i === currentTaskIndex ? 'bg-primary-500' : 'bg-gray-300'}"></div>
+            <span>Задача ${i + 1}</span>
+        </div>
+    `).join('');
+}
+
+function sendChat(e) {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg || !ws) return;
+
+    const profile = getProfile();
+    const sender = profile.user.username;
+    ws.send(JSON.stringify({ type: 'chat_message', message: msg, sender }));
+    appendChat(sender + ' (вы)', msg);
+    input.value = '';
+}
+
+function appendChat(sender, message) {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML += `
+        <div class="p-1.5 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <span class="font-medium text-primary-600">${sender}:</span>
+            <span class="text-gray-700 dark:text-gray-300">${message}</span>
+        </div>`;
+    container.scrollTop = container.scrollHeight;
+}
+
+async function extendTime() {
+    if (!currentSession) return;
+    try {
+        const result = await api(`/live/sessions/${currentSession.id}/extend-time/`, {
+            method: 'POST',
+            body: { minutes: 15 }
+        });
+        toast(`+15 мин. Всего: ${result.time_limit_minutes} мин`);
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'chat_message', message: `Время продлено на 15 мин (всего: ${result.time_limit_minutes} мин)`, sender: 'Система' }));
+        }
+    } catch(e) {
+        toast('Ошибка продления', 'error');
+    }
+}
+
+async function endSession() {
+    if (!currentSession) return;
+    try {
+        await api(`/live/sessions/${currentSession.id}/complete/`, { method: 'POST' });
+        toast('Сессия завершена');
+    } catch(e) {}
+    leaveSession();
+}
+
+function leaveSession() {
+    if (ws) { ws.close(); ws = null; }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    currentSession = null;
+    document.getElementById('live-session').classList.add('hidden');
+    document.getElementById('live-landing').classList.remove('hidden');
+    loadMySessions();
+}
+
+async function loadMySessions() {
+    try {
+        const data = await api('/live/sessions/');
+        const sessions = data.results || data;
+        if (sessions.length === 0) return;
+
+        document.getElementById('my-sessions').classList.remove('hidden');
+        document.getElementById('sessions-list').innerHTML = sessions.map(s => `
+            <div class="card p-3 flex items-center justify-between">
+                <div>
+                    <span class="font-medium text-sm">${s.title}</span>
+                    <span class="text-xs ml-2 px-2 py-0.5 rounded-full ${
+                        s.status === 'active' ? 'bg-success-50 text-success-700' :
+                        s.status === 'waiting' ? 'bg-warning-50 text-warning-700' :
+                        s.status === 'completed' ? 'bg-gray-100 text-gray-600' :
+                        'bg-danger-50 text-danger-700'
+                    }">${s.status}</span>
+                    <span class="text-xs text-gray-400 ml-2">${s.invite_code}</span>
+                </div>
+                ${s.status === 'waiting' || s.status === 'active' ? `
+                    <button onclick="rejoinSession('${s.id}')" class="btn-ghost text-xs">Открыть</button>
+                ` : `
+                    <button onclick="viewSessionResults('${s.id}')" class="btn-ghost text-xs">Результаты</button>
+                `}
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function rejoinSession(id) {
+    try {
+        const session = await api(`/live/sessions/${id}/`);
+        enterSession(session);
+    } catch(e) {
+        toast('Ошибка открытия сессии', 'error');
+    }
+}
+
+async function viewSessionResults(id) {
+    try {
+        const session = await api(`/live/sessions/${id}/`);
+        const results = session.results || [];
+        let html = `<h3 class="font-bold mb-2">${session.title}</h3>`;
+        if (results.length === 0) {
+            html += '<p class="text-sm text-gray-500">Нет результатов</p>';
+        } else {
+            html += results.map(r => `
+                <div class="flex justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm mb-1">
+                    <span>${r.question_text}</span>
+                    <span class="${r.status === 'passed' ? 'text-success-600' : 'text-danger-600'} font-medium">${r.tests_passed}/${r.tests_total}</span>
+                </div>`).join('');
+        }
+        document.getElementById('sessions-list').innerHTML = html + `<button onclick="loadMySessions()" class="btn-ghost text-xs mt-2">Назад</button>`;
+    } catch(e) {}
+}
+
+// ---- WebRTC Screen Sharing ----
+
+let peerConnection = null;
+let localStream = null;
+let isSharing = false;
+
+const rtcConfig = {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+};
+
+async function toggleScreenShare() {
+    if (isSharing) {
+        stopScreenShare();
+    } else {
+        await startScreenShare();
+    }
+}
+
+async function startScreenShare() {
+    try {
+        localStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always' },
+            audio: false,
+        });
+
+        localStream.getVideoTracks()[0].onended = () => stopScreenShare();
+
+        isSharing = true;
+        document.getElementById('screen-share-label').textContent = 'Остановить';
+        document.getElementById('btn-screen-share').classList.add('!bg-danger-50', '!text-danger-600', '!border-danger-200');
+
+        createPeerConnection();
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        ws.send(JSON.stringify({
+            type: 'webrtc_offer',
+            payload: { sdp: offer.sdp, type: offer.type },
+        }));
+    } catch (e) {
+        console.log('Screen share cancelled or error:', e);
+    }
+}
+
+function stopScreenShare() {
+    if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+    }
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    isSharing = false;
+    document.getElementById('screen-share-label').textContent = 'Показать экран';
+    document.getElementById('btn-screen-share').classList.remove('!bg-danger-50', '!text-danger-600', '!border-danger-200');
+    document.getElementById('screen-share-container').classList.add('hidden');
+}
+
+function createPeerConnection() {
+    peerConnection = new RTCPeerConnection(rtcConfig);
+
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'webrtc_ice',
+                payload: event.candidate.toJSON(),
+            }));
+        }
+    };
+
+    peerConnection.ontrack = (event) => {
+        const video = document.getElementById('remote-screen');
+        const videoFs = document.getElementById('remote-screen-fullscreen');
+        video.srcObject = event.streams[0];
+        videoFs.srcObject = event.streams[0];
+        document.getElementById('screen-share-container').classList.remove('hidden');
+    };
+}
+
+async function handleOffer(payload) {
+    createPeerConnection();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(payload));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    ws.send(JSON.stringify({
+        type: 'webrtc_answer',
+        payload: { sdp: answer.sdp, type: answer.type },
+    }));
+}
+
+async function handleAnswer(payload) {
+    if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(payload));
+    }
+}
+
+async function handleIceCandidate(payload) {
+    if (peerConnection) {
+        try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(payload));
+        } catch (e) {
+            console.log('ICE candidate error:', e);
+        }
+    }
+}
+
+function toggleScreenFullscreen() {
+    document.getElementById('screen-fullscreen-modal').classList.remove('hidden');
+}
+
+function closeScreenFullscreen() {
+    document.getElementById('screen-fullscreen-modal').classList.add('hidden');
+}
+
+init();
+</script>
+{% endblock %}

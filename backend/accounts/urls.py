@@ -1,11 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 router = DefaultRouter()
 router.register('profiles', views.UserProfileViewSet)
-router.register('register', views.RegisterViewSet, basename='register')
 
 urlpatterns = [
+    path('register/', views.RegisterView.as_view(), name='register'),
+    path('login/', views.LoginView.as_view(), name='login'),
+    path('csrf/', views.GetCSRFTokenView.as_view(), name='csrf'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('password-reset/', views.PasswordResetRequestView.as_view(), name='password_reset'),
+    path('password-reset/confirm/', views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('', include(router.urls)),
 ]
