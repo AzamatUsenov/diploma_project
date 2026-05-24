@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Календарь — JobPlatform{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">Календарь собеседований</h1>
+            <p class="text-sm text-gray-500 mt-1" id="calendar-subtitle"></p>
+        </div>
+        <button onclick="openScheduleModal()" id="btn-schedule" class="hidden btn-primary text-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Назначить
+        </button>
+    </div>
+
+    <!-- Upcoming -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Ближайшие
+        </h2>
+        <div id="upcoming-list" class="space-y-3">
+            <div class="flex justify-center py-8">
+                <div class="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All interviews -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold mb-4">Все собеседования</h2>
+        <div id="all-interviews" class="space-y-3">
+            <div class="text-sm text-gray-400 text-center py-4">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div id="schedule-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 slide-up">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold">Назначить собеседование</h2>
+            <button onclick="closeScheduleModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form onsubmit="scheduleInterview(event)" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Кандидат (заявка)</label>
+                <select id="sched-application" required class="input-field">
+                    <option value="">Выберите...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Дата и время</label>
+                <input type="datetime-local" id="sched-datetime" required class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Длительность (мин)</label>
+                <select id="sched-duration" class="input-field">
+                    <option value="15">15 мин</option>
+                    <option value="30" selected>30 мин</option>
+                    <option value="45">45 мин</option>
+                    <option value="60">60 мин</option>
+                    <option value="90">90 мин</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Место / ссылка</label>
+                <input type="text" id="sched-location" class="input-field" placeholder="https://meet.google.com/... или адрес">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Заметки</label>
+                <textarea id="sched-notes" rows="2" class="input-field" placeholder="Что обсуждаем..."></textarea>
+            </div>
+            <button type="submit" id="btn-sched-submit" class="btn-primary w-full">Назначить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+if (!isLoggedIn()) { window.location = '/login/'; }
+
+const profile = getProfile();
+const isHR = profile && profile.role === 'hr';
+
+if (isHR) {
+    document.getElementById('btn-schedule').classList.remove('hidden');
+    document.getElementById('calendar-subtitle').textContent = 'Планируйте собеседования с кандидатами';
+} else {
+    document.getElementById('calendar-subtitle').textContent = 'Ваши предстоящие собеседования';
+}
+
+async function loadInterviews() {
+    try {
+        const upcoming = await api('/applications/interviews/upcoming/');
+        renderUpcoming(upcoming);
+
+        const all = await api('/applications/interviews/');
+        const interviews = all.results || all;
+        renderAll(interviews);
+    } catch(e) {
+        document.getElementById('upcoming-list').innerHTML = '<p class="text-danger-500 text-sm">Ошибка загрузки</p>';
+    }
+}
+
+function renderUpcoming(interviews) {
+    const container = document.getElementById('upcoming-list');
+    if (interviews.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-6">
+                <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-gray-500 text-sm">Нет предстоящих собеседований</p>
+            </div>`;
+        return;
+    }
+    container.innerHTML = interviews.map(i => interviewCard(i, true)).join('');
+}
+
+function renderAll(interviews) {
+    const container = document.getElementById('all-interviews');
+    if (interviews.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Нет собеседований</p>';
+        return;
+    }
+    container.innerHTML = interviews.map(i => interviewCard(i, false)).join('');
+}
+
+function interviewCard(interview, highlight) {
+    const dt = new Date(interview.scheduled_at);
+    const date = dt.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' });
+    const time = dt.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+    const statusConfig = {
+        scheduled: { label: 'Запланировано', bg: 'bg-primary-50', text: 'text-primary-700', ring: 'ring-primary-200' },
+        confirmed: { label: 'Подтверждено', bg: 'bg-success-50', text: 'text-success-700', ring: 'ring-success-200' },
+        completed: { label: 'Проведено', bg: 'bg-gray-100', text: 'text-gray-600', ring: 'ring-gray-200' },
+        cancelled: { label: 'Отменено', bg: 'bg-danger-50', text: 'text-danger-700', ring: 'ring-danger-200' },
+    };
+    const st = statusConfig[interview.status] || statusConfig.scheduled;
+
+    return `
+        <div class="flex items-center gap-4 p-4 rounded-xl ${highlight ? 'bg-primary-50/50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+            <div class="text-center shrink-0">
+                <div class="text-2xl font-bold text-primary-600">${dt.getDate()}</div>
+                <div class="text-xs text-gray-500">${dt.toLocaleDateString('ru', { month: 'short' })}</div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-semibold text-sm">${interview.job_title || 'Собеседование'}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full ring-1 ${st.bg} ${st.text} ${st.ring} font-medium">${st.label}</span>
+                </div>
+                <div class="text-xs text-gray-500 flex items-center gap-3">
+                    <span>${time} · ${interview.duration_minutes} мин</span>
+                    <span>${isHR ? interview.applicant_username : ''}</span>
+                </div>
+                ${interview.location ? `<div class="text-xs text-primary-600 mt-1 truncate">${interview.location}</div>` : ''}
+            </div>
+            <div class="flex gap-1 shrink-0">
+                ${interview.status === 'scheduled' && !isHR ? `<button onclick="confirmInterview(${interview.id})" class="text-xs px-2.5 py-1 rounded-lg bg-success-50 text-success-700 hover:bg-success-100 font-medium">Подтвердить</button>` : ''}
+                ${interview.status === 'scheduled' || interview.status === 'confirmed' ? `<button onclick="cancelInterview(${interview.id})" class="text-xs px-2.5 py-1 rounded-lg bg-danger-50 text-danger-700 hover:bg-danger-100 font-medium">Отменить</button>` : ''}
+            </div>
+        </div>`;
+}
+
+async function confirmInterview(id) {
+    try {
+        await api(`/applications/interviews/${id}/status/`, { method: 'PATCH', body: { status: 'confirmed' } });
+        toast('Собеседование подтверждено');
+        loadInterviews();
+    } catch(e) { toast('Ошибка', 'error'); }
+}
+
+async function cancelInterview(id) {
+    try {
+        await api(`/applications/interviews/${id}/status/`, { method: 'PATCH', body: { status: 'cancelled' } });
+        toast('Собеседование отменено');
+        loadInterviews();
+    } catch(e) { toast('Ошибка', 'error'); }
+}
+
+// Schedule modal
+function openScheduleModal() {
+    document.getElementById('schedule-modal').classList.remove('hidden');
+    loadApplicationsForSchedule();
+}
+
+function closeScheduleModal() {
+    document.getElementById('schedule-modal').classList.add('hidden');
+}
+
+async function loadApplicationsForSchedule() {
+    try {
+        const data = await api('/applications/');
+        const apps = data.results || [];
+        const select = document.getElementById('sched-application');
+        select.innerHTML = '<option value="">Выберите кандидата...</option>' +
+            apps.filter(a => a.status === 'accepted' || a.status === 'reviewed' || a.status === 'pending')
+                .map(a => `<option value="${a.id}">${a.applicant_username} — ${a.job_title}</option>`)
+                .join('');
+    } catch(e) {}
+}
+
+async function scheduleInterview(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-sched-submit');
+    btn.disabled = true;
+    btn.textContent = 'Создание...';
+
+    try {
+        await api('/applications/interviews/', {
+            method: 'POST',
+            body: {
+                application: parseInt(document.getElementById('sched-application').value),
+                scheduled_at: new Date(document.getElementById('sched-datetime').value).toISOString(),
+                duration_minutes: parseInt(document.getElementById('sched-duration').value),
+                location: document.getElementById('sched-location').value,
+                notes: document.getElementById('sched-notes').value,
+            }
+        });
+        toast('Собеседование назначено! Уведомление отправлено в чат.');
+        closeScheduleModal();
+        loadInterviews();
+    } catch(e) {
+        toast('Ошибка: ' + (e.detail || 'Не удалось создать'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Назначить';
+    }
+}
+
+loadInterviews();
+</script>
+{% endblock %}
