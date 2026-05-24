@@ -11,12 +11,14 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'corsheaders',
     'django_filters',
@@ -30,6 +32,7 @@ INSTALLED_APPS = [
     'analytics',
     'notifications',
     'reviews',
+    'live_coding',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +65,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
 
 if config('DB_ENGINE', default='') == 'django.db.backends.postgresql':
     DATABASES = {

@@ -12,20 +12,22 @@ from .requirement_parser import parse_skills
 from .skill_classifier import classify_skill, LEVEL_WEIGHT
 
 
-def calculate_match(user_skills, job_skills):
+def calculate_match(user_skills, job_skills, verified_skills=None):
     """
     Calculate match score between user and job.
 
     Args:
         user_skills: list of user's skill names (from UserProfile.skills)
         job_skills: list of required skill names (from Job.parsed_skills or parsed on the fly)
+        verified_skills: list of verified skill names (passed tests) — get full weight
 
     Returns:
         dict: {
             'match_score': 73,
             'matching_skills': ['Python', 'Django'],
             'missing_skills': ['Docker', 'AWS'],
-            'extra_skills': ['React'],  # user has but job doesn't need
+            'extra_skills': ['React'],
+            'verified_matching': ['Python'],
         }
     """
     if not job_skills:
@@ -34,23 +36,28 @@ def calculate_match(user_skills, job_skills):
             'matching_skills': [],
             'missing_skills': [],
             'extra_skills': list(user_skills) if user_skills else [],
+            'verified_matching': [],
         }
 
+    verified_set = set(s.strip() for s in (verified_skills or []))
     user_set = set(s.strip() for s in (user_skills or []))
     job_set = set(s.strip() for s in job_skills)
 
     matching = sorted(user_set & job_set)
     missing = sorted(job_set - user_set)
     extra = sorted(user_set - job_set)
+    verified_matching = sorted(verified_set & job_set)
 
-    # Weighted score: senior skills weight more
     total_weight = 0
     matched_weight = 0
     for skill in job_set:
         weight = LEVEL_WEIGHT.get(classify_skill(skill), 2)
         total_weight += weight
         if skill in user_set:
-            matched_weight += weight
+            if skill in verified_set:
+                matched_weight += weight
+            else:
+                matched_weight += weight * 0.5
 
     match_score = round((matched_weight / total_weight) * 100) if total_weight > 0 else 100
 
@@ -59,6 +66,7 @@ def calculate_match(user_skills, job_skills):
         'matching_skills': matching,
         'missing_skills': missing,
         'extra_skills': extra,
+        'verified_matching': verified_matching,
     }
 
 
@@ -88,9 +96,10 @@ def generate_recommendation(user_profile, job, analysis=None):
         analysis = analyze_job(job)
 
     user_skills = user_profile.skills or []
+    verified_skills = user_profile.verified_skills or []
     job_skills = analysis['parsed_skills']
 
-    match_result = calculate_match(user_skills, job_skills)
+    match_result = calculate_match(user_skills, job_skills, verified_skills)
     match_score = match_result['match_score']
     missing = match_result['missing_skills']
     matching = match_result['matching_skills']

@@ -8,7 +8,7 @@ from .frontend_views import (
     CompareView, TestsListView,
     LoginView, RegisterView, ProfileView, PublicProfileView,
     ApplicationsView, FavoritesView, AboutView, DashboardView,
-    ChatView,
+    ChatView, LiveCodingView, CalendarView, CompanyView,
 )
 
 admin.site.site_header = 'JobPlatform — Администрирование'
@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/analytics/', include('analytics.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api/reviews/', include('reviews.urls')),
+    path('api/live/', include('live_coding.urls')),
 
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -49,6 +50,9 @@ urlpatterns = [
     path('about/', AboutView.as_view(), name='about'),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('applications/<int:pk>/chat/', ChatView.as_view(), name='chat'),
+    path('live/', LiveCodingView.as_view(), name='live_coding'),
+    path('calendar/', CalendarView.as_view(), name='calendar'),
+    path('company/', CompanyView.as_view(), name='company'),
 ]
 
 if settings.DEBUG:

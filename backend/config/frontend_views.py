@@ -59,3 +59,15 @@ class DashboardView(TemplateView):
 
 class ChatView(TemplateView):
     template_name = 'chat.html'
+
+
+class LiveCodingView(TemplateView):
+    template_name = 'live_coding.html'
+
+
+class CalendarView(TemplateView):
+    template_name = 'calendar.html'
+
+
+class CompanyView(TemplateView):
+    template_name = 'company.html'

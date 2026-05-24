@@ -541,6 +541,661 @@ class Command(BaseCommand):
                 option_a=q[1], option_b=q[2], option_c=q[3], option_d=q[4],
                 correct_answer=q[5], order=i)
 
+        # ===== Code Challenges =====
+        code_test = SkillTest.objects.create(
+            title='Python: Live Coding', language='python', difficulty='hard',
+            description='Практические задачи на алгоритмы и структуры данных. Напишите код и проверьте его тестами.')
+
+        Question.objects.create(
+            test=code_test, question_type='code', order=1,
+            text='Реализуйте функцию flatten(lst), которая принимает вложенный список произвольной глубины и возвращает плоский список всех элементов.\n\nПример: flatten([1, [2, [3, 4], 5], 6]) → [1, 2, 3, 4, 5, 6]',
+            code_template='def flatten(lst):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    _check(flatten([1, 2, 3]) == [1, 2, 3], f"Ожидалось [1,2,3], получено {flatten([1,2,3])}")
+_run_test('Плоский список без вложенности', _t1)
+
+def _t2():
+    _check(flatten([1, [2, 3], 4]) == [1, 2, 3, 4], f"Ожидалось [1,2,3,4], получено {flatten([1,[2,3],4])}")
+_run_test('Один уровень вложенности', _t2)
+
+def _t3():
+    _check(flatten([1, [2, [3, [4, [5]]]]]) == [1, 2, 3, 4, 5], f"Получено {flatten([1,[2,[3,[4,[5]]]]])}")
+_run_test('Глубокая вложенность', _t3)
+
+def _t4():
+    _check(flatten([]) == [], f"Ожидалось [], получено {flatten([])}")
+_run_test('Пустой список', _t4)
+
+def _t5():
+    _check(flatten([[1, 2], [], [3, [4, 5]], 6]) == [1, 2, 3, 4, 5, 6])
+_run_test('Смешанные типы и пустые подсписки', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test, question_type='code', order=2,
+            text='Реализуйте функцию group_by(items, key_func), которая группирует элементы списка по результату key_func. Возвращает словарь {ключ: [элементы]}.\n\nПример: group_by([1,2,3,4,5,6], lambda x: x % 2) → {1: [1,3,5], 0: [2,4,6]}',
+            code_template='def group_by(items, key_func):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    result = group_by([1,2,3,4,5,6], lambda x: x % 2)
+    _check(result == {1: [1,3,5], 0: [2,4,6]}, f"Получено {result}")
+_run_test('Группировка по чётности', _t1)
+
+def _t2():
+    result = group_by(['hi', 'hey', 'ok', 'bye'], lambda s: len(s))
+    _check(result == {2: ['hi', 'ok'], 3: ['hey', 'bye']}, f"Получено {result}")
+_run_test('Группировка строк по длине', _t2)
+
+def _t3():
+    _check(group_by([], lambda x: x) == {}, "Пустой список должен вернуть {}")
+_run_test('Пустой список', _t3)
+
+def _t4():
+    result = group_by([1,2,3], lambda x: x)
+    _check(result == {1: [1], 2: [2], 3: [3]}, f"Получено {result}")
+_run_test('Один элемент в каждой группе', _t4)""",
+        )
+
+        Question.objects.create(
+            test=code_test, question_type='code', order=3,
+            text='Реализуйте функцию memoize(func), которая возвращает обёрнутую функцию с кэшированием результатов. При повторном вызове с теми же аргументами должна возвращать закэшированный результат.\n\nПример:\n@memoize\ndef add(a, b): return a + b\nadd(1, 2)  # вычисляет\nadd(1, 2)  # из кэша',
+            code_template='def memoize(func):\n    # Ваш код здесь\n    pass',
+            test_code="""def _test_basic_memoize():
+    call_count = [0]
+    @memoize
+    def add(a, b):
+        call_count[0] += 1
+        return a + b
+    _check(add(1, 2) == 3, f"add(1,2) вернул {add(1,2)}")
+    _check(add(1, 2) == 3, "Повторный вызов должен вернуть то же")
+    _check(call_count[0] == 1, f"Функция вызвана {call_count[0]} раз, ожидалось 1")
+
+_run_test('Кэширование повторных вызовов', _test_basic_memoize)
+
+def _test_different_args():
+    call_count = [0]
+    @memoize
+    def mul(a, b):
+        call_count[0] += 1
+        return a * b
+    _check(mul(2, 3) == 6, f"mul(2,3) = {mul(2,3)}")
+    _check(mul(3, 4) == 12, f"mul(3,4) = {mul(3,4)}")
+    _check(mul(2, 3) == 6, "Кэш не сработал")
+    _check(call_count[0] == 2, f"Вызовов: {call_count[0]}, ожидалось 2")
+
+_run_test('Разные аргументы — разные вызовы', _test_different_args)
+
+def _test_no_args():
+    call_count = [0]
+    @memoize
+    def greet():
+        call_count[0] += 1
+        return 'hello'
+    _check(greet() == 'hello', f"Получено {greet()}")
+    _check(greet() == 'hello', "Повтор не из кэша")
+    _check(call_count[0] == 1, f"Вызовов: {call_count[0]}, ожидалось 1")
+
+_run_test('Функция без аргументов', _test_no_args)""",
+        )
+
+        Question.objects.create(
+            test=code_test, question_type='code', order=4,
+            text='Реализуйте функцию find_pairs(nums, target), которая находит все уникальные пары чисел в списке, сумма которых равна target. Каждая пара — кортеж (a, b) где a <= b. Пары не должны повторяться.\n\nПример: find_pairs([1,2,3,4,5], 6) → [(1,5), (2,4)]',
+            code_template='def find_pairs(nums, target):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    result = sorted(find_pairs([1,2,3,4,5], 6))
+    _check(result == [(1,5), (2,4)], f"Получено {result}")
+_run_test('Базовый случай', _t1)
+
+def _t2():
+    result = sorted(find_pairs([1,1,2,3,3,4,5], 4))
+    _check(result == [(1,3)], f"Дубли не убраны: {result}")
+_run_test('Дубликаты в списке', _t2)
+
+def _t3():
+    _check(find_pairs([1,2,3], 10) == [], "Должен вернуть []")
+_run_test('Нет пар', _t3)
+
+def _t4():
+    result = sorted(find_pairs([-2,-1,0,1,2,3], 1))
+    _check(result == [(-2,3), (-1,2), (0,1)], f"Получено {result}")
+_run_test('Отрицательные числа', _t4)
+
+def _t5():
+    _check(find_pairs([], 5) == [], "Пустой список → []")
+_run_test('Пустой список', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test, question_type='code', order=5,
+            text='Реализуйте класс LRUCache(capacity), который поддерживает операции get(key) и put(key, value) за O(1). При превышении capacity удаляется наименее используемый элемент.\n\nПример:\ncache = LRUCache(2)\ncache.put(1, 1)\ncache.put(2, 2)\ncache.get(1)    → 1\ncache.put(3, 3) # удаляет key=2\ncache.get(2)    → -1',
+            code_template='class LRUCache:\n    def __init__(self, capacity):\n        # Ваш код здесь\n        pass\n\n    def get(self, key):\n        # Ваш код здесь\n        pass\n\n    def put(self, key, value):\n        # Ваш код здесь\n        pass',
+            test_code="""def _test_basic_lru():
+    cache = LRUCache(2)
+    cache.put(1, 1)
+    cache.put(2, 2)
+    _check(cache.get(1) == 1, f"get(1) = {cache.get(1)}, ожидалось 1")
+    cache.put(3, 3)
+    _check(cache.get(2) == -1, f"get(2) = {cache.get(2)}, ожидалось -1 (вытеснен)")
+
+_run_test('Базовая LRU-логика', _test_basic_lru)
+
+def _test_update_value():
+    cache = LRUCache(2)
+    cache.put(1, 1)
+    cache.put(1, 10)
+    _check(cache.get(1) == 10, f"get(1) = {cache.get(1)}, ожидалось 10")
+
+_run_test('Обновление значения по ключу', _test_update_value)
+
+def _test_capacity_one():
+    cache = LRUCache(1)
+    cache.put(1, 1)
+    cache.put(2, 2)
+    _check(cache.get(1) == -1, f"get(1) = {cache.get(1)}, должен быть вытеснен")
+    _check(cache.get(2) == 2, f"get(2) = {cache.get(2)}, ожидалось 2")
+
+_run_test('Capacity = 1', _test_capacity_one)
+
+def _test_access_refreshes():
+    cache = LRUCache(2)
+    cache.put(1, 1)
+    cache.put(2, 2)
+    cache.get(1)
+    cache.put(3, 3)
+    _check(cache.get(1) == 1, f"get(1) = {cache.get(1)}, доступ должен обновить приоритет")
+    _check(cache.get(2) == -1, f"get(2) = {cache.get(2)}, должен быть вытеснен")
+
+_run_test('Доступ обновляет приоритет', _test_access_refreshes)""",
+        )
+
+        # ===== Python: Структуры данных и алгоритмы =====
+        code_test2 = SkillTest.objects.create(
+            title='Python: Алгоритмы', language='python', difficulty='hard',
+            description='Алгоритмические задачи: деревья, графы, динамическое программирование, обработка строк.')
+
+        Question.objects.create(
+            test=code_test2, question_type='code', order=1,
+            text='Реализуйте функцию is_valid_brackets(s), которая проверяет корректность скобочной последовательности. Строка содержит только символы ()[]{}.\n\nПример: is_valid_brackets("({[]})") → True\nis_valid_brackets("([)]") → False',
+            code_template='def is_valid_brackets(s):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    _check(is_valid_brackets("()") == True, "() должно быть True")
+_run_test('Простые круглые скобки', _t1)
+
+def _t2():
+    _check(is_valid_brackets("({[]})") == True, "({[]}) должно быть True")
+_run_test('Вложенные разные скобки', _t2)
+
+def _t3():
+    _check(is_valid_brackets("([)]") == False, "([)] должно быть False")
+_run_test('Неправильное пересечение', _t3)
+
+def _t4():
+    _check(is_valid_brackets("") == True, "Пустая строка - True")
+_run_test('Пустая строка', _t4)
+
+def _t5():
+    _check(is_valid_brackets("{[()]}(){}") == True)
+_run_test('Длинная корректная последовательность', _t5)
+
+def _t6():
+    _check(is_valid_brackets("((((") == False, "Незакрытые скобки")
+_run_test('Незакрытые скобки', _t6)""",
+        )
+
+        Question.objects.create(
+            test=code_test2, question_type='code', order=2,
+            text='Реализуйте функцию longest_unique_substring(s), которая возвращает длину самой длинной подстроки без повторяющихся символов.\n\nПример: longest_unique_substring("abcabcbb") → 3 ("abc")\nlongest_unique_substring("bbbbb") → 1',
+            code_template='def longest_unique_substring(s):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    _check(longest_unique_substring("abcabcbb") == 3, f"Получено {longest_unique_substring('abcabcbb')}")
+_run_test('abcabcbb → 3', _t1)
+
+def _t2():
+    _check(longest_unique_substring("bbbbb") == 1, f"Получено {longest_unique_substring('bbbbb')}")
+_run_test('bbbbb → 1', _t2)
+
+def _t3():
+    _check(longest_unique_substring("pwwkew") == 3, f"Получено {longest_unique_substring('pwwkew')}")
+_run_test('pwwkew → 3', _t3)
+
+def _t4():
+    _check(longest_unique_substring("") == 0)
+_run_test('Пустая строка → 0', _t4)
+
+def _t5():
+    _check(longest_unique_substring("abcdef") == 6)
+_run_test('Все уникальные → длина строки', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test2, question_type='code', order=3,
+            text='Реализуйте функцию merge_intervals(intervals), которая сливает пересекающиеся интервалы. Каждый интервал — кортеж (start, end).\n\nПример: merge_intervals([(1,3),(2,6),(8,10),(15,18)]) → [(1,6),(8,10),(15,18)]',
+            code_template='def merge_intervals(intervals):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    result = merge_intervals([(1,3),(2,6),(8,10),(15,18)])
+    _check(result == [(1,6),(8,10),(15,18)], f"Получено {result}")
+_run_test('Стандартный случай', _t1)
+
+def _t2():
+    result = merge_intervals([(1,4),(4,5)])
+    _check(result == [(1,5)], f"Получено {result}")
+_run_test('Граничное касание', _t2)
+
+def _t3():
+    _check(merge_intervals([]) == [], "Пустой → []")
+_run_test('Пустой список', _t3)
+
+def _t4():
+    result = merge_intervals([(1,10),(2,3),(4,5),(6,7)])
+    _check(result == [(1,10)], f"Получено {result}")
+_run_test('Один большой покрывает все', _t4)
+
+def _t5():
+    result = merge_intervals([(1,2),(3,4),(5,6)])
+    _check(result == [(1,2),(3,4),(5,6)], f"Получено {result}")
+_run_test('Нет пересечений', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test2, question_type='code', order=4,
+            text='Реализуйте функцию max_profit(prices), которая возвращает максимальную прибыль от одной покупки и продажи акции. prices[i] — цена в день i. Нельзя продать до покупки.\n\nПример: max_profit([7,1,5,3,6,4]) → 5 (купить за 1, продать за 6)',
+            code_template='def max_profit(prices):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    _check(max_profit([7,1,5,3,6,4]) == 5, f"Получено {max_profit([7,1,5,3,6,4])}")
+_run_test('Стандартный случай → 5', _t1)
+
+def _t2():
+    _check(max_profit([7,6,4,3,1]) == 0, f"Получено {max_profit([7,6,4,3,1])}")
+_run_test('Убывающие цены → 0', _t2)
+
+def _t3():
+    _check(max_profit([1,2]) == 1)
+_run_test('Два элемента', _t3)
+
+def _t4():
+    _check(max_profit([2,4,1,7]) == 6, f"Получено {max_profit([2,4,1,7])}")
+_run_test('Минимум в середине', _t4)
+
+def _t5():
+    _check(max_profit([]) == 0)
+_run_test('Пустой список', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test2, question_type='code', order=5,
+            text='Реализуйте функцию spiral_order(matrix), которая возвращает элементы матрицы в порядке спирали (по часовой стрелке, начиная с верхнего левого угла).\n\nПример: spiral_order([[1,2,3],[4,5,6],[7,8,9]]) → [1,2,3,6,9,8,7,4,5]',
+            code_template='def spiral_order(matrix):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    result = spiral_order([[1,2,3],[4,5,6],[7,8,9]])
+    _check(result == [1,2,3,6,9,8,7,4,5], f"Получено {result}")
+_run_test('Матрица 3x3', _t1)
+
+def _t2():
+    result = spiral_order([[1,2,3,4],[5,6,7,8],[9,10,11,12]])
+    _check(result == [1,2,3,4,8,12,11,10,9,5,6,7], f"Получено {result}")
+_run_test('Матрица 3x4', _t2)
+
+def _t3():
+    _check(spiral_order([[1]]) == [1])
+_run_test('Матрица 1x1', _t3)
+
+def _t4():
+    _check(spiral_order([]) == [])
+_run_test('Пустая матрица', _t4)
+
+def _t5():
+    result = spiral_order([[1,2],[3,4]])
+    _check(result == [1,2,4,3], f"Получено {result}")
+_run_test('Матрица 2x2', _t5)""",
+        )
+
+        # ===== JavaScript: Live Coding =====
+        code_test_js = SkillTest.objects.create(
+            title='JavaScript: Live Coding', language='javascript', difficulty='hard',
+            description='Практические задачи на JavaScript: замыкания, промисы, прототипы, работа с массивами и объектами.')
+
+        Question.objects.create(
+            test=code_test_js, question_type='code', order=1,
+            text='Реализуйте функцию debounce(fn, delay), которая возвращает функцию, откладывающую вызов fn на delay мс. Повторный вызов сбрасывает таймер.\n\nПример:\nconst log = debounce(console.log, 100)\nlog("a") // отменено\nlog("b") // выполнится через 100мс',
+            code_template='def debounce(fn, delay):\n    # Эмуляция debounce на Python\n    # (для демонстрации логики)\n    pass',
+            test_code="""import time
+
+def _t1():
+    calls = []
+    def fn(x):
+        calls.append(x)
+    debounced = debounce(fn, 0.05)
+    debounced("a")
+    debounced("b")
+    debounced("c")
+    time.sleep(0.1)
+    _check(calls == ["c"], f"Должен быть только последний вызов, получено {calls}")
+_run_test('Только последний вызов выполняется', _t1)
+
+def _t2():
+    calls = []
+    def fn(x):
+        calls.append(x)
+    debounced = debounce(fn, 0.05)
+    debounced("a")
+    time.sleep(0.1)
+    debounced("b")
+    time.sleep(0.1)
+    _check(calls == ["a", "b"], f"Оба вызова с паузой, получено {calls}")
+_run_test('Вызовы с достаточной паузой', _t2)
+
+def _t3():
+    calls = []
+    def fn():
+        calls.append(1)
+    debounced = debounce(fn, 0.05)
+    debounced()
+    time.sleep(0.1)
+    _check(len(calls) == 1, f"Один вызов, получено {len(calls)}")
+_run_test('Функция без аргументов', _t3)""",
+        )
+
+        Question.objects.create(
+            test=code_test_js, question_type='code', order=2,
+            text='Реализуйте функцию deep_equal(a, b), которая рекурсивно сравнивает два объекта (dict/list/примитивы). Возвращает True если структуры идентичны.\n\nПример: deep_equal({"a": [1,2]}, {"a": [1,2]}) → True\ndeep_equal({"a": 1}, {"a": 2}) → False',
+            code_template='def deep_equal(a, b):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    _check(deep_equal({"a": 1, "b": 2}, {"a": 1, "b": 2}) == True)
+_run_test('Одинаковые словари', _t1)
+
+def _t2():
+    _check(deep_equal({"a": [1, {"b": 2}]}, {"a": [1, {"b": 2}]}) == True)
+_run_test('Глубокая вложенность', _t2)
+
+def _t3():
+    _check(deep_equal({"a": 1}, {"a": 2}) == False)
+_run_test('Разные значения', _t3)
+
+def _t4():
+    _check(deep_equal([1, [2, [3]]], [1, [2, [3]]]) == True)
+_run_test('Вложенные списки', _t4)
+
+def _t5():
+    _check(deep_equal({"a": 1}, {"a": 1, "b": 2}) == False)
+_run_test('Разное количество ключей', _t5)
+
+def _t6():
+    _check(deep_equal(None, None) == True)
+    _check(deep_equal(0, False) == False)
+_run_test('None и примитивы', _t6)""",
+        )
+
+        Question.objects.create(
+            test=code_test_js, question_type='code', order=3,
+            text='Реализуйте функцию pipe(*functions), которая возвращает функцию-конвейер: результат каждой функции передаётся как аргумент следующей.\n\nПример:\nadd1 = lambda x: x + 1\nmul2 = lambda x: x * 2\nf = pipe(add1, mul2, add1)\nf(5) → 13  # (5+1)*2+1',
+            code_template='def pipe(*functions):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    add1 = lambda x: x + 1
+    mul2 = lambda x: x * 2
+    f = pipe(add1, mul2)
+    _check(f(5) == 12, f"pipe(add1, mul2)(5) = {f(5)}, ожидалось 12")
+_run_test('Две функции', _t1)
+
+def _t2():
+    add1 = lambda x: x + 1
+    mul2 = lambda x: x * 2
+    sub3 = lambda x: x - 3
+    f = pipe(add1, mul2, sub3)
+    _check(f(5) == 9, f"Получено {f(5)}")
+_run_test('Три функции', _t2)
+
+def _t3():
+    f = pipe()
+    _check(f(42) == 42, "Пустой pipe возвращает значение как есть")
+_run_test('Пустой pipe', _t3)
+
+def _t4():
+    upper = lambda s: s.upper()
+    excl = lambda s: s + "!"
+    f = pipe(upper, excl)
+    _check(f("hello") == "HELLO!", f"Получено {f('hello')}")
+_run_test('Работа со строками', _t4)""",
+        )
+
+        Question.objects.create(
+            test=code_test_js, question_type='code', order=4,
+            text='Реализуйте функцию throttle(fn, interval), которая ограничивает частоту вызовов fn. Первый вызов выполняется сразу, последующие — не чаще чем раз в interval секунд.\n\nПример: throttled = throttle(print, 0.1)\nthrottled("a")  # выполнится сразу\nthrottled("b")  # игнорируется (слишком рано)',
+            code_template='def throttle(fn, interval):\n    # Ваш код здесь\n    pass',
+            test_code="""import time
+
+def _t1():
+    calls = []
+    def fn(x):
+        calls.append(x)
+    throttled = throttle(fn, 0.1)
+    throttled("a")
+    _check(calls == ["a"], f"Первый вызов сразу, получено {calls}")
+_run_test('Первый вызов выполняется сразу', _t1)
+
+def _t2():
+    calls = []
+    def fn(x):
+        calls.append(x)
+    throttled = throttle(fn, 0.1)
+    throttled("a")
+    throttled("b")
+    throttled("c")
+    _check(calls == ["a"], f"Повторные игнорируются, получено {calls}")
+_run_test('Повторные вызовы игнорируются', _t2)
+
+def _t3():
+    calls = []
+    def fn(x):
+        calls.append(x)
+    throttled = throttle(fn, 0.05)
+    throttled("a")
+    time.sleep(0.08)
+    throttled("b")
+    _check(calls == ["a", "b"], f"После паузы можно вызвать, получено {calls}")
+_run_test('После interval можно вызвать снова', _t3)""",
+        )
+
+        Question.objects.create(
+            test=code_test_js, question_type='code', order=5,
+            text='Реализуйте функцию retry(fn, max_attempts, delay), которая вызывает fn() и при исключении повторяет попытку до max_attempts раз с задержкой delay секунд. Возвращает результат при успехе или выбрасывает последнее исключение.\n\nПример: retry(unstable_api_call, 3, 0.1)',
+            code_template='def retry(fn, max_attempts, delay=0):\n    # Ваш код здесь\n    pass',
+            test_code="""import time
+
+def _t1():
+    result = retry(lambda: 42, 3)
+    _check(result == 42, f"Получено {result}")
+_run_test('Успешный первый вызов', _t1)
+
+def _t2():
+    counter = [0]
+    def flaky():
+        counter[0] += 1
+        if counter[0] < 3:
+            raise ValueError("fail")
+        return "ok"
+    result = retry(flaky, 5, 0)
+    _check(result == "ok", f"Получено {result}")
+    _check(counter[0] == 3, f"Вызовов: {counter[0]}, ожидалось 3")
+_run_test('Успех на третью попытку', _t2)
+
+def _t3():
+    def always_fail():
+        raise RuntimeError("error")
+    try:
+        retry(always_fail, 3, 0)
+        _check(False, "Должно было выбросить исключение")
+    except RuntimeError as e:
+        _check(str(e) == "error")
+_run_test('Все попытки неудачны — выбрасывает исключение', _t3)
+
+def _t4():
+    counter = [0]
+    def fn():
+        counter[0] += 1
+        raise Exception("x")
+    try:
+        retry(fn, 4, 0)
+    except:
+        pass
+    _check(counter[0] == 4, f"Должно быть 4 попытки, получено {counter[0]}")
+_run_test('Количество попыток = max_attempts', _t4)""",
+        )
+
+        # ===== Python: Функциональное программирование =====
+        code_test3 = SkillTest.objects.create(
+            title='Python: Функциональные паттерны', language='python', difficulty='medium',
+            description='Функциональный стиль: map/filter/reduce, каррирование, генераторы, итераторы.')
+
+        Question.objects.create(
+            test=code_test3, question_type='code', order=1,
+            text='Реализуйте функцию compose(*fns), которая принимает функции и возвращает их композицию (справа налево). compose(f, g, h)(x) == f(g(h(x)))\n\nПример:\ndouble = lambda x: x * 2\ninc = lambda x: x + 1\ncompose(double, inc)(3) → 8  # double(inc(3))',
+            code_template='def compose(*fns):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    double = lambda x: x * 2
+    inc = lambda x: x + 1
+    f = compose(double, inc)
+    _check(f(3) == 8, f"compose(double, inc)(3) = {f(3)}, ожидалось 8")
+_run_test('double(inc(3)) = 8', _t1)
+
+def _t2():
+    f = compose(str, lambda x: x + 1, lambda x: x * 2)
+    _check(f(3) == "7", f"Получено {f(3)}")
+_run_test('Три функции: str(add1(mul2(3)))', _t2)
+
+def _t3():
+    f = compose()
+    _check(f(5) == 5, "Пустой compose возвращает аргумент")
+_run_test('Пустой compose', _t3)
+
+def _t4():
+    f = compose(lambda x: x.upper())
+    _check(f("hello") == "HELLO")
+_run_test('Одна функция', _t4)""",
+        )
+
+        Question.objects.create(
+            test=code_test3, question_type='code', order=2,
+            text='Реализуйте функцию curry(fn), которая возвращает каррированную версию функции. Каррированная функция принимает аргументы по одному.\n\nПример:\n@curry\ndef add(a, b, c): return a + b + c\nadd(1)(2)(3) → 6\nadd(1, 2)(3) → 6',
+            code_template='def curry(fn):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    @curry
+    def add(a, b):
+        return a + b
+    _check(add(1)(2) == 3, f"add(1)(2) = {add(1)(2)}")
+_run_test('Два аргумента по одному', _t1)
+
+def _t2():
+    @curry
+    def add3(a, b, c):
+        return a + b + c
+    _check(add3(1)(2)(3) == 6)
+_run_test('Три аргумента по одному', _t2)
+
+def _t3():
+    @curry
+    def add3(a, b, c):
+        return a + b + c
+    _check(add3(1, 2)(3) == 6, "Частичное применение")
+_run_test('Частичное применение (2+1)', _t3)
+
+def _t4():
+    @curry
+    def add(a, b):
+        return a + b
+    _check(add(1, 2) == 3, "Все аргументы сразу")
+_run_test('Все аргументы сразу', _t4)""",
+        )
+
+        Question.objects.create(
+            test=code_test3, question_type='code', order=3,
+            text='Реализуйте генератор fibonacci(), который бесконечно генерирует числа Фибоначчи: 0, 1, 1, 2, 3, 5, 8, 13...\n\nПример:\nfib = fibonacci()\nnext(fib) → 0\nnext(fib) → 1\nnext(fib) → 1\nnext(fib) → 2',
+            code_template='def fibonacci():\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    fib = fibonacci()
+    first_10 = [next(fib) for _ in range(10)]
+    expected = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+    _check(first_10 == expected, f"Первые 10: {first_10}")
+_run_test('Первые 10 чисел Фибоначчи', _t1)
+
+def _t2():
+    fib = fibonacci()
+    _check(next(fib) == 0, "Первый = 0")
+    _check(next(fib) == 1, "Второй = 1")
+_run_test('Начальные значения 0 и 1', _t2)
+
+def _t3():
+    fib = fibonacci()
+    for _ in range(20):
+        next(fib)
+    val = next(fib)
+    _check(val == 6765, f"fib(20) должно быть 6765, получено {val}")
+_run_test('fib(20) = 6765', _t3)""",
+        )
+
+        Question.objects.create(
+            test=code_test3, question_type='code', order=4,
+            text='Реализуйте функцию chunk(lst, size), которая разбивает список на подсписки длиной size. Последний подсписок может быть короче.\n\nПример: chunk([1,2,3,4,5], 2) → [[1,2],[3,4],[5]]',
+            code_template='def chunk(lst, size):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    result = chunk([1,2,3,4,5], 2)
+    _check(result == [[1,2],[3,4],[5]], f"Получено {result}")
+_run_test('Нечётное разбиение', _t1)
+
+def _t2():
+    result = chunk([1,2,3,4], 2)
+    _check(result == [[1,2],[3,4]], f"Получено {result}")
+_run_test('Ровное разбиение', _t2)
+
+def _t3():
+    _check(chunk([], 3) == [], "Пустой список → []")
+_run_test('Пустой список', _t3)
+
+def _t4():
+    result = chunk([1,2,3], 5)
+    _check(result == [[1,2,3]], f"Получено {result}")
+_run_test('Size больше длины списка', _t4)
+
+def _t5():
+    result = chunk([1,2,3,4,5,6], 1)
+    _check(result == [[1],[2],[3],[4],[5],[6]], f"Получено {result}")
+_run_test('Size = 1', _t5)""",
+        )
+
+        Question.objects.create(
+            test=code_test3, question_type='code', order=5,
+            text='Реализуйте функцию once(fn), которая позволяет вызвать fn только один раз. Повторные вызовы возвращают результат первого вызова.\n\nПример:\ncounter = once(lambda: 42)\ncounter() → 42\ncounter() → 42 (fn не вызывается повторно)',
+            code_template='def once(fn):\n    # Ваш код здесь\n    pass',
+            test_code="""def _t1():
+    calls = [0]
+    def expensive():
+        calls[0] += 1
+        return "result"
+    f = once(expensive)
+    _check(f() == "result")
+    _check(f() == "result")
+    _check(calls[0] == 1, f"Вызовов: {calls[0]}, ожидалось 1")
+_run_test('Функция вызывается только раз', _t1)
+
+def _t2():
+    f = once(lambda: 100)
+    r1 = f()
+    r2 = f()
+    r3 = f()
+    _check(r1 == r2 == r3 == 100)
+_run_test('Все вызовы возвращают первый результат', _t2)
+
+def _t3():
+    calls = [0]
+    def fn(x, y):
+        calls[0] += 1
+        return x + y
+    f = once(fn)
+    _check(f(1, 2) == 3)
+    _check(f(10, 20) == 3, "Повторный вызов с другими args -> первый результат")
+    _check(calls[0] == 1)
+_run_test('Аргументы второго вызова игнорируются', _t3)""",
+        )
+
         self.stdout.write(f'    Tests: {SkillTest.objects.count()}, Questions: {Question.objects.count()}')
 
     def _create_applications(self):

@@ -57,8 +57,19 @@
                 <div class="card p-6 slide-up" style="animation-delay:0.15s">
                     <h2 class="text-sm font-semibold text-gray-500 mb-3">Навыки</h2>
                     <div class="flex flex-wrap gap-2">
-                        ${profile.skills.map(s => `<span class="text-sm px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg font-medium">${s}</span>`).join('')}
+                        ${profile.skills.map(s => {
+                            const verified = (profile.verified_skills || []).includes(s);
+                            return verified
+                                ? `<span class="text-sm px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium ring-1 ring-green-200 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    ${s}</span>`
+                                : `<span class="text-sm px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg font-medium ring-1 ring-gray-200">${s}</span>`;
+                        }).join('')}
                     </div>
+                    <p class="text-xs text-gray-400 mt-3 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Подтверждённые навыки (тестом) имеют больший вес при матчинге
+                    </p>
                 </div>` : ''}
 
                 ${isHR && profile.company_name ? `

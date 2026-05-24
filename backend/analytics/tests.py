@@ -204,6 +204,7 @@ class RecommendationTest(APITestCase):
         self.profile = UserProfile.objects.create(
             user=self.user, role='applicant', level='junior',
             skills=['Python', 'Django', 'HTML', 'CSS', 'Git', 'SQL'],
+            verified_skills=['Python', 'Django', 'HTML', 'CSS', 'Git', 'SQL'],
         )
         self.hr = User.objects.create_user(username='hr', password='pass123')
 
